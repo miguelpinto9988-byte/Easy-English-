@@ -40,6 +40,9 @@ jobs:
         with:
           gradle-version: '9.5.0'
 
+      - name: Ejecutar pruebas unitarias de las actividades
+        run: gradle :app:testDebugUnitTest --stacktrace --no-daemon
+
       - name: Compilar APK de depuración
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 
