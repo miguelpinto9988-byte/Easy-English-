@@ -564,40 +564,135 @@ private fun ReportPage(onSave: () -> Unit, onSkip: () -> Unit) {
 
 @Composable
 private fun HomePage(profile: UserProfile, onLevels: () -> Unit, onClass: () -> Unit, onDownloads: () -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-        item { ScreenTitle("¡Hola, " + profile.name + "!", "Tu espacio de aprendizaje de inglés americano") }
+    LazyColumn(
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(13.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item { Text("APRENDE A TU RITMO", fontSize = 11.sp, color = Blue, letterSpacing = 1.sp) }
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = Blue), shape = RoundedCornerShape(22.dp)) {
-                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Image(painterResource(R.drawable.fox_mascot), null, Modifier.size(116.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("¡Aprende a tu ritmo!", color = Color.White, fontSize = 19.sp)
-                        Text("7 etapas · 156 unidades planificadas", color = Color(0xFFE1F0FF), fontSize = 12.sp)
+            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Navy)) {
+                Box(Modifier.fillMaxWidth().background(Brush.linearGradient(listOf(Color(0xFF103B99), Color(0xFF176ACA), Color(0xFF48ADE2))))) {
+                    Image(
+                        painterResource(R.drawable.fox_mascot),
+                        "Zorrito de Easy English",
+                        Modifier.align(Alignment.CenterEnd).size(168.dp)
+                    )
+                    Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("TU AVENTURA COMIENZA", color = Color(0xFFD0F4FF), fontSize = 11.sp)
+                        Text("¡Cada palabra\ncuenta!", color = Color.White, fontSize = 27.sp, lineHeight = 30.sp)
+                        Text("Avanza de A0 a C2 con\nexplicaciones y práctica.", color = Color(0xFFE1F0FF), fontSize = 12.sp)
+                        Spacer(Modifier.height(13.dp))
+                        Button(onClick = onClass, colors = ButtonDefaults.buttonColors(containerColor = Color.White)) {
+                            Text("Comenzar a aprender →", color = Blue, fontSize = 12.sp)
+                        }
                     }
                 }
             }
         }
-        item { FeatureCard("Explorar niveles", "A0, A1, A2, B1, B2, C1 y C2", R.drawable.nav_levels, onLevels) }
-        item { FeatureCard("Probar teoría interactiva", "Verbo to be · ejercicio con retroalimentación", R.drawable.nav_book, onClass) }
-        item { FeatureCard("Buscar nuevos contenidos", "Paquetes de temas y audios mediante internet", R.drawable.nav_download, onDownloads) }
         item {
-            Text(
-                "Los 156 títulos conforman el plan curricular. El desarrollo completo de todas las lecciones y evaluaciones está en curso.",
-                color = Gray, fontSize = 11.sp
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                MetricCard(profile.level, "Nivel seleccionado", Modifier.weight(1f))
+                MetricCard("0/156", "Unidades terminadas", Modifier.weight(1f))
+                MetricCard("7", "Etapas totales", Modifier.weight(1f))
+            }
+        }
+        item { Text("Tu siguiente lección", fontSize = 19.sp, color = Navy) }
+        item { FeatureCard("Verbo to be · A1", "Clase interactiva de demostración", R.drawable.nav_book, onClick = onClass) }
+        item { Text("Explora tu aprendizaje", fontSize = 19.sp, color = Navy) }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickTile("Ver niveles", R.drawable.nav_levels, Color(0xFFE8F1FF), Modifier.weight(1f), onLevels)
+                QuickTile("Teoría interactiva", R.drawable.nav_book, Color(0xFFF3E8FF), Modifier.weight(1f), onClass)
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                QuickTile("Practicar", R.drawable.nav_exam, Color(0xFFFFF1DD), Modifier.weight(1f), onClass)
+                QuickTile("Más contenidos", R.drawable.nav_download, Color(0xFFE0F9F4), Modifier.weight(1f), onDownloads)
+            }
+        }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF6FF))) {
+                Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource(R.drawable.fox_mascot), null, Modifier.size(53.dp))
+                    Column {
+                        Text("¡Aprende conmigo!", color = Navy, fontSize = 14.sp)
+                        Text("Reglas claras y ejercicios paso a paso.", color = Gray, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+        item { Text("Las 156 unidades conforman el plan curricular. Las lecciones se desarrollarán progresivamente.", color = Gray, fontSize = 11.sp) }
+    }
+}
+
+@Composable
+private fun MetricCard(value: String, label: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(value, color = Blue, fontSize = 19.sp)
+            Text(label, color = Gray, fontSize = 10.sp, lineHeight = 13.sp)
         }
     }
 }
 
 @Composable
+private fun QuickTile(label: String, icon: Int, tint: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = modifier, colors = CardDefaults.cardColors(containerColor = tint), shape = RoundedCornerShape(16.dp)) {
+        Row(Modifier.padding(11.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(icon), null, Modifier.size(30.dp))
+            Text(label, color = Navy, fontSize = 11.sp, lineHeight = 15.sp)
+        }
+    }
+}
+
+private fun levelColor(code: String): Color = when (code) {
+    "A0" -> Color(0xFF3AA2C9)
+    "A1" -> Color(0xFF276BE3)
+    "A2" -> Color(0xFF19A0A3)
+    "B1" -> Color(0xFF289967)
+    "B2" -> Color(0xFFC39234)
+    "C1" -> Color(0xFF8B62CB)
+    else -> Color(0xFF6653AC)
+}
+private fun levelTint(code: String): Color = when (code) {
+    "A0" -> Color(0xFFE3F9FF)
+    "A1" -> Color(0xFFE5EEFF)
+    "A2" -> Color(0xFFDFF9F4)
+    "B1" -> Color(0xFFE0FAEC)
+    "B2" -> Color(0xFFFFF3DD)
+    "C1" -> Color(0xFFF3EBFF)
+    else -> Color(0xFFECE9FF)
+}
+private fun levelIcon(code: String): Int = when (code) {
+    "A0" -> R.drawable.nav_a0
+    "A1" -> R.drawable.nav_a1
+    "A2" -> R.drawable.nav_a2
+    "B1" -> R.drawable.nav_b1
+    "B2" -> R.drawable.nav_b2
+    "C1" -> R.drawable.nav_c1
+    else -> R.drawable.nav_c2
+}
+
+@Composable
 private fun LevelsPage(onLevel: (String) -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { ScreenTitle("Niveles y unidades", "Tu currículo de inglés americano · 156 unidades planificadas") }
+    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+        item { ScreenTitle("Niveles y unidades", "A0 a C2 · 156 unidades de inglés americano") }
+        item { Text("ELIGE TU ETAPA", color = Blue, fontSize = 11.sp, letterSpacing = 1.sp) }
         items(LevelCatalog.levels) { lvl ->
-            FeatureCard(lvl.code + " · " + lvl.name, lvl.units.size.toString() + " unidades · " + lvl.description, R.drawable.nav_levels) {
-                onLevel(lvl.code)
+            Card(onClick = { onLevel(lvl.code) }, colors = CardDefaults.cardColors(containerColor = levelTint(lvl.code)), shape = RoundedCornerShape(19.dp)) {
+                Row(Modifier.padding(horizontal = 15.dp, vertical = 15.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Image(painterResource(levelIcon(lvl.code)), null, Modifier.size(48.dp))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(lvl.code + " · " + lvl.name, color = levelColor(lvl.code), fontSize = 17.sp)
+                        Text(lvl.units.size.toString() + " unidades · " + lvl.description, color = Gray, fontSize = 11.sp)
+                    }
+                    Text("›", fontSize = 24.sp, color = levelColor(lvl.code))
+                }
             }
         }
+        item { Text("La clasificación por niveles es orientativa. El banco de pruebas completo aún está en desarrollo.", color = Gray, fontSize = 11.sp) }
     }
 }
 
