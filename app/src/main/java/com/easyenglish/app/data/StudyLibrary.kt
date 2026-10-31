@@ -7,12 +7,33 @@ import kotlin.random.Random
 data class StudyLine(val english: String, val spanish: String)
 data class ClozeItem(val prompt: String, val answer: String, val options: List<String>, val explanation: String)
 data class ReadingCheck(val id: String, val prompt: String, val answer: String, val evidence: String, val feedback: String)
+data class IntensiveTask(
+    val id: String,
+    val kind: String,
+    val skill: String,
+    val prompt: String,
+    val stimulus: String,
+    val answer: String,
+    val options: List<String>,
+    val hint: String,
+    val explanation: String,
+    val audioText: String
+)
+
+data class IntensiveSession(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val tasks: List<IntensiveTask>
+)
+
 data class StudyLesson(
     val id: String, val level: String, val number: Int, val title: String,
     val objective: String, val rule: String, val attention: String,
     val examples: List<StudyLine>, val reading: String, val writing: String, val speaking: String,
     val specificRule: String, val dialogue: List<String>,
     val readingExtended: String, val rubric: List<String>, val cloze: ClozeItem,
+    val intensiveSessions: List<IntensiveSession> = emptyList(),
     val editorialStatus: String = "draft_unreviewed",
     val learningOutcomes: List<String> = emptyList(),
     val contextualText: String = "",
@@ -28,7 +49,7 @@ object StudyLibrary {
         require(level in listOf("A0","A1","A2","B1","B2","C1","C2"))
         cache[level]?.let { return it }
         val json=context.assets.open("curriculum/"+level.lowercase()+".json").bufferedReader().use { JSONObject(it.readText()) }
-        require(json.getInt("schema")==4 && json.getString("level")==level) { "Versión curricular incorrecta" }
+        require(json.getInt("schema")==5 && json.getString("level")==level) { "Versión curricular incorrecta" }
         val a=json.getJSONArray("lessons")
         val output=(0 until a.length()).map { i ->
             val o=a.getJSONObject(i)
@@ -39,7 +60,34 @@ object StudyLibrary {
             val outcomes=o.getJSONArray("learningOutcomes")
             val checks=o.getJSONArray("readingChecks")
             val options=c.getJSONArray("options")
+            val intensive=o.getJSONArray("intensiveSessions")
+            val sessions=(0 until intensive.length()).map { sessionIndex ->
+                val p=intensive.getJSONObject(sessionIndex)
+                val tasks=p.getJSONArray("tasks")
+                IntensiveSession(
+                    id=p.getString("id"),
+                    title=p.getString("title"),
+                    subtitle=p.getString("subtitle"),
+                    tasks=(0 until tasks.length()).map { taskIndex ->
+                        val t=tasks.getJSONObject(taskIndex)
+                        val alternatives=t.getJSONArray("options")
+                        IntensiveTask(
+                            id=t.getString("id"),
+                            kind=t.getString("kind"),
+                            skill=t.getString("skill"),
+                            prompt=t.getString("prompt"),
+                            stimulus=t.getString("stimulus"),
+                            answer=t.getString("answer"),
+                            options=(0 until alternatives.length()).map(alternatives::getString),
+                            hint=t.getString("hint"),
+                            explanation=t.getString("explanation"),
+                            audioText=t.getString("audioText")
+                        )
+                    }
+                )
+            }
             StudyLesson(
+                intensiveSessions=sessions,
                 id=o.getString("id"),level=o.getString("level"),number=o.getInt("number"),
                 title=o.getString("title"),objective=o.getString("objective"),
                 rule=o.getString("rule"),attention=o.getString("attention"),
@@ -71,7 +119,8 @@ object StudyLibrary {
         require(output.size==(if(level=="A0")12 else 24) && output.map { it.id }.distinct().size==output.size)
         require(output.all {
             it.examples.size>=4 && it.dialogue.size==2 && it.cloze.answer in it.cloze.options &&
-            it.learningOutcomes.size>=3 && it.readingChecks.size>=2
+            it.learningOutcomes.size>=3 && it.readingChecks.size>=2 &&
+            it.intensiveSessions.size==8 && it.intensiveSessions.all { session -> session.tasks.size==8 }
         })
         cache[level]=output
         return output

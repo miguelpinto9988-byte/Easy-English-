@@ -625,7 +625,7 @@ private fun HomePage(profile: UserProfile, onLevels: () -> Unit, onClass: () -> 
                 }
             }
         }
-        item { Text("156 fichas iniciales con teoría, ejemplos y práctica. Los contenidos avanzados se ampliarán y revisarán.", color = Gray, fontSize = 11.sp) }
+        item { Text("156 unidades · 8 sesiones intensivas por tema. Material original pendiente de revisión docente.", color = Gray, fontSize = 11.sp) }
     }
 }
 
@@ -730,7 +730,7 @@ private fun UnitsPage(level: String, onBack: () -> Unit, onUnit: (Int) -> Unit) 
         items(filtered) { (index,title) ->
             FeatureCard(
                 (index+1).toString().padStart(2,'0')+"  "+title,
-                "8 láminas · teoría, lectura, escucha, escritura y 7 juegos",
+                "8 sesiones · 64 actividades, teoría y juegos",
                 R.drawable.nav_book
             ) { onUnit(index) }
         }

@@ -75,7 +75,7 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
     val dialogueBank=remember(level) { StudyLibrary.levelDialogues(context,level) }
     val titleBank=remember(level) { StudyLibrary.levelTitles(context,level) }
     val progressStore=remember(context) { PracticeProgressStore(context) }
-    var tab by rememberSaveable(level,unit) { mutableStateOf("Presentación") }
+    var tab by rememberSaveable(level,unit) { mutableStateOf("Ruta intensiva") }
     var ttsReady by remember { mutableStateOf(false) }
     var audioStatus by remember { mutableStateOf("") }
     val speech=remember(context) {
@@ -119,12 +119,13 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             }
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    listOf("Presentación","Prácticas","Lectura","Escucha","Escritura").forEach { name ->
+                    listOf("Ruta intensiva","Presentación","Prácticas","Lectura","Escucha","Escritura").forEach { name ->
                         FilterChip(selected=tab==name,onClick={tab=name},label={Text(name,fontSize=12.sp)})
                     }
                 }
             }
             when(tab){
+                "Ruta intensiva" -> item { IntensiveLearning(lesson,speak) }
                 "Presentación" -> item { Presentation(lesson) }
                 "Prácticas" -> item { Games(lesson,lines,dialogueBank,titleBank,progressStore) }
                 "Lectura" -> item { Reading(lesson,dialogueBank,titleBank) }
