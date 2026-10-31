@@ -61,7 +61,7 @@ object SupplementaryPractice {
         repeat(14) { i ->
             val own = i < 8
             val line = if (own) local[i % local.size] else review[(lesson.number + i - 8) % review.size]
-            val toSpanish = i % 2 == 0
+            val toSpanish = if (own) (i / local.size + i) % 2 == 0 else i % 2 == 0
             val answer = if (toSpanish) line.spanish else line.english
             val values = lines.map { if (toSpanish) it.spanish else it.english }
             result.add(
@@ -170,6 +170,38 @@ object SupplementaryPractice {
         val dialogues = levelLessons.map { it.dialogue[1].substringAfter(": ").trim() }.distinct()
         val titles = levelLessons.map { it.title }.distinct()
         val rng = Random(seed(lesson, mode.ordinal * 100 + round))
+        // A0 tiene doce unidades. Las cuatro rondas adicionales varían la consigna
+        // para evitar reutilizar literalmente las preguntas de tema y diálogo.
+        if (mode == StudyGame.TOPIC && round >= levelLessons.size) {
+            return GeneratedQuestion(
+                mode,
+                "Relaciona esta explicación original con su tema:\n\n" +
+                    selected.specificRule.take(240),
+                selected.title,
+                options(selected.title, titles, seed(lesson, round)),
+                selected.specificRule,
+                selected.title,
+                explanation = "Identifica la regla específica, no solo palabras sueltas.",
+                skill = "reading"
+            )
+        }
+        if (mode == StudyGame.DIALOGUE && round >= levelLessons.size) {
+            val answer = selected.dialogue[0].substringAfter(": ").trim()
+            val replies = levelLessons.map {
+                it.dialogue[0].substringAfter(": ").trim()
+            }.distinct()
+            return GeneratedQuestion(
+                mode,
+                "¿Qué intervención precede a esta respuesta?\n\n" +
+                    selected.dialogue[1],
+                answer,
+                options(answer, replies, seed(lesson, round)),
+                selected.dialogue.joinToString("\n"),
+                answer,
+                explanation = "Comprueba la pregunta original del diálogo.",
+                skill = "reading"
+            )
+        }
         // A0 tiene doce unidades: cuatro cloze extra del texto original.
         if (mode == StudyGame.CLOZE && round >= levelLessons.size) {
             val model = bank[(lesson.number + round) % bank.size]
