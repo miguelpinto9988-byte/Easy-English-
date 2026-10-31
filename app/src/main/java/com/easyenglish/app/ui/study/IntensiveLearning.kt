@@ -72,6 +72,7 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
     var checked by remember(task.id) { mutableStateOf(false) }
     var showModel by remember(task.id) { mutableStateOf(false) }
     var writing by remember(task.id) { mutableStateOf("") }
+    var practiced by remember(task.id) { mutableStateOf(false) }
     var showHint by remember(task.id) { mutableStateOf(false) }
     val words=remember(task.id) { task.answer.trim().split(Regex("\\s+")).filter(String::isNotEmpty) }
     val mixed=remember(task.id) { words.mapIndexed { index, word -> index to word }.shuffled(Random(task.id.hashCode())) }
@@ -128,7 +129,8 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
                         Text(if(chosen.isEmpty())"Toca las palabras para ordenarlas."
                             else chosen.joinToString(" ") { words[it] },color=Navy,fontSize=14.sp)
                         mixed.chunked(3).forEach { group ->
-                            Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
+                            Row(Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement=Arrangement.spacedBy(5.dp)) {
                                 group.forEach { (index,word) ->
                                     if(index !in chosen) OutlinedButton(
                                         onClick={chosen=chosen+index},enabled=!checked
@@ -166,8 +168,13 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
                             modifier=Modifier.fillMaxWidth().height(128.dp),
                             label={Text("Tu respuesta, sin enviarla a internet")})
                     }
-                    if(task.kind=="speak")
+                    if(task.kind=="speak") {
                         Text("Practica oralmente: no se graba ni se transmite tu voz.",color=Muted,fontSize=12.sp)
+                        OutlinedButton(onClick={practiced=!practiced},modifier=Modifier.fillMaxWidth()) {
+                            Text(if(practiced)"✓ He practicado en voz alta"
+                                else "Confirmar que practiqué en voz alta")
+                        }
+                    }
                     OutlinedButton(onClick={showModel=!showModel},modifier=Modifier.fillMaxWidth()) {
                         Text(if(showModel)"Ocultar referencia" else "Comparar con un modelo")
                     }
@@ -199,7 +206,9 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
                 onClick={
                     // Saltar es posible, pero no se registra como actividad realizada.
                     // Las respuestas abiertas solo se marcan tras comparar el modelo.
-                    if((checked || (!closed && showModel)) && task.id !in completed) {
+                    val openDone=showModel && if(task.kind=="speak") practiced
+                                 else writing.isNotBlank()
+                    if((checked || (!closed && openDone)) && task.id !in completed) {
                         completed.add(task.id)
                         prefs.edit().putStringSet("done:"+lesson.id,completed.toSet()).apply()
                     }
