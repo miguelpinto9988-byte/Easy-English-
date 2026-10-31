@@ -66,6 +66,43 @@ for level, quantity in expected.items():
         review = [pair for pair in level_pairs if pair[0] not in local_english]
         if not local or not review:
             errors.append(f"{key}: sin suficientes modelos para el repaso")
+        # Los otros recorridos ofrecen 16 ejercicios por pestaña o modalidad.
+        # Lectura: dos comprobaciones contextuales + 8 pares locales y 6 de repaso.
+        # Escucha: cuatro pares de la unidad + ocho del nivel + cuatro diálogos.
+        # Escritura: dieciséis consignas con modelos, no reactivos autocorregibles.
+        level_dialogues = list(dict.fromkeys(
+            l["dialogue"][1].split(": ", 1)[-1].strip() for l in lessons
+        ))
+        level_titles = {l.get("title") for l in lessons}
+        if len(local) < 4 or len(review) < 8:
+            errors.append(f"{key}: no hay modelos suficientes para 16 lecturas/escuchas")
+        if len(level_dialogues) < 4 or len(level_titles) < 4:
+            errors.append(f"{key}: distractores insuficientes en diálogo o tema")
+        if not lesson.get("contextualText", "").strip() or not lesson.get("writing", "").strip():
+            errors.append(f"{key}: falta texto de lectura o modelo de escritura")
+        if len(lesson.get("learningOutcomes", [])) == 0:
+            errors.append(f"{key}: faltan objetivos para escritura")
+        # Cada alternativa debe excluir la correcta y aportar tres distractores únicos.
+        for en, es in local[:4] + review[:8]:
+            for position, answer in ((0, en), (1, es)):
+                others = {
+                    pair[position] for pair in level_pairs
+                    if pair[position] and pair[position] != answer
+                }
+                if len(others) < 3:
+                    errors.append(f"{key}: insuficientes opciones para {answer[:30]}")
+        # Cuatro rondas cloze extra en A0: frases de modelo con palabras completas.
+        if len(lessons) < 16:
+            for i in range(16-len(lessons)):
+                line = level_pairs[(lesson["number"]+len(lessons)+i) % len(level_pairs)][0]
+                words = [w.strip("?!.,;:") for w in line.split()
+                         if len(w.strip("?!.,;:")) >= 2]
+                if not words:
+                    errors.append(f"{key}: cloze de repaso no construible")
+        stats["reading_exercises"] += 16
+        stats["listening_exercises"] += 16
+        stats["writing_exercises"] += 16
+        stats["game_rounds"] += 7*16
         for session_index, session in enumerate(sessions):
             tasks=session.get("tasks",[])
             if len(tasks)!=8:
@@ -121,6 +158,9 @@ print("Unidades:",stats["units"],"sesiones:",stats["sessions"],
       "ejercicios base:",len(task_ids),"ejercicios de repaso:",len(expanded_ids),
       "total disponible:",len(task_ids)+len(expanded_ids),
       "ejercicios por sesión:",16,"ejemplos bilingües:",stats["examples"])
+print("Recorridos adicionales: lectura=",stats["reading_exercises"],
+      "escucha=",stats["listening_exercises"],"escritura=",stats["writing_exercises"],
+      "rondas de juegos=",stats["game_rounds"])
 print("Por modalidad:",", ".join(k+"="+str(v) for k,v in stats.items()
                                if k not in {"units","sessions","examples"}))
 print("ADVERTENCIA: no demuestra validez pedagógica, corrección semántica ni variedad lingüística completa.")
