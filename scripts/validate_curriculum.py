@@ -91,14 +91,13 @@ for level, quantity in expected.items():
                 }
                 if len(others) < 3:
                     errors.append(f"{key}: insuficientes opciones para {answer[:30]}")
-        # Cuatro rondas cloze extra en A0: frases de modelo con palabras completas.
-        if len(lessons) < 16:
-            for i in range(16-len(lessons)):
-                line = level_pairs[(lesson["number"]+len(lessons)+i) % len(level_pairs)][0]
-                words = [w.strip("?!.,;:") for w in line.split()
-                         if len(w.strip("?!.,;:")) >= 2]
-                if not words:
-                    errors.append(f"{key}: cloze de repaso no construible")
+        # Los quince cloze adicionales se forman a partir de oraciones modelo.
+        # JUnit comprueba que las 16 consignas y respuestas resultantes sean distintas.
+        for sentence, _ in local[:4]:
+            candidates = [w.strip("?!.,;:") for w in sentence.split()
+                          if len(w.strip("?!.,;:")) >= 2]
+            if not candidates:
+                errors.append(f"{key}: modelo local no apto para completar")
         stats["reading_exercises"] += 16
         stats["listening_exercises"] += 16
         stats["writing_exercises"] += 16
