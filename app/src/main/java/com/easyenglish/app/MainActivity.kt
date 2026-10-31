@@ -700,60 +700,40 @@ private fun LevelsPage(onLevel: (String) -> Unit) {
 
 @Composable
 private fun UnitsPage(level: String, onBack: () -> Unit, onUnit: (Int) -> Unit) {
-    val lvl = LevelCatalog.levels.firstOrNull { it.code == level } ?: LevelCatalog.levels.first()
-    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        item { ScreenTitle(level + " · " + lvl.name, lvl.units.size.toString() + " unidades organizadas por tema") }
-        item { TextButton(onClick = onBack) { Text("‹ Volver a niveles") } }
-        itemsIndexed(lvl.units) { i, title ->
-            FeatureCard((i + 1).toString().padStart(2, '0') + "  " + title, if (level == "A1" && i == 2) "Teoría, ejemplos, lectura, audio y juegos" else "Ficha interactiva disponible · edición inicial", R.drawable.nav_book) {
-                onUnit(i)
+    val lvl=LevelCatalog.levels.firstOrNull { it.code==level } ?: LevelCatalog.levels.first()
+    var search by rememberSaveable(level) { mutableStateOf("") }
+    val filtered=remember(search,level) {
+        lvl.units.mapIndexed { index,title -> index to title }
+            .filter { (_,title) ->
+                search.isBlank() || title.contains(search.trim(),ignoreCase=true)
             }
-        }
     }
-}
-
-@Composable
-private fun LessonPage(level: String, unit: Int, onBack: () -> Unit) {
-    val lvl = LevelCatalog.levels.firstOrNull { it.code == level } ?: LevelCatalog.levels.first()
-    val title = lvl.units.getOrNull(unit) ?: "Clase de demostración"
-    var pronoun by remember(level, unit) { mutableStateOf("I") }
-    var selected by remember(level, unit) { mutableStateOf("") }
-    val verb = when (pronoun) { "I" -> "am"; "He", "She" -> "is"; else -> "are" }
-    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { ScreenTitle("Lección interactiva", level + " · Unidad " + (unit + 1)) }
-        item { TextButton(onClick = onBack) { Text("‹ Volver a las unidades") } }
+    LazyColumn(contentPadding=PaddingValues(18.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+        item { ScreenTitle(level+" · "+lvl.name,"Biblioteca: "+lvl.units.size+" unidades de inglés americano") }
+        item { TextButton(onClick=onBack) { Text("‹ Volver a niveles") } }
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(title, fontSize = 20.sp, color = Navy)
-                    Text("Descubre · Regla · Practica", fontSize = 12.sp, color = Blue)
-                    Text("Ejemplo interactivo: verbo to be", fontSize = 14.sp, color = Navy)
-                    Text("Regla: I usa am; he/she usa is; you/we/they usa are.", fontSize = 13.sp, color = Gray)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("I", "She", "They").forEach { value ->
-                            FilterChip(selected = pronoun == value, onClick = { pronoun = value }, label = { Text(value) })
-                        }
-                    }
-                    Text(pronoun + " " + verb + " learning English.", color = Blue, fontSize = 21.sp)
-                    HorizontalDivider()
-                    Text("Selecciona la respuesta correcta:", fontSize = 14.sp, color = Navy)
-                    Text("She ___ a student.", fontSize = 18.sp, color = Navy)
-                    listOf("am", "is", "are").forEach { option ->
-                        OutlinedButton(onClick = { selected = option }, modifier = Modifier.fillMaxWidth()) {
-                            Text((if (selected == option) "● " else "○ ") + option)
-                        }
-                    }
-                    if (selected.isNotBlank()) {
-                        Text(
-                            if (selected == "is") "¡Correcto! She se combina con is." else "Todavía no. She es tercera persona singular: utiliza is.",
-                            color = if (selected == "is") Color(0xFF14846A) else Color(0xFF9C5A15),
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            }
+            OutlinedTextField(
+                value=search,onValueChange={search=it.take(60)},
+                label={Text("Buscar un tema")},
+                placeholder={Text("Ejemplo: presente, familia, historia...")},
+                singleLine=true,
+                modifier=Modifier.fillMaxWidth()
+            )
         }
-        item { Text("Esta actividad demuestra el formato de teoría interactiva. Las demás unidades recibirán lecciones completas en entregas posteriores.", fontSize = 11.sp, color = Gray) }
+        item {
+            Text(filtered.size.toString()+" temas encontrados · material inicial sin conexión",
+                color=Gray,fontSize=11.sp)
+        }
+        if(filtered.isEmpty())item {
+            Text("No se encontraron temas con ese texto.",color=Gray,fontSize=13.sp)
+        }
+        items(filtered) { (index,title) ->
+            FeatureCard(
+                (index+1).toString().padStart(2,'0')+"  "+title,
+                "8 láminas · teoría, lectura, escucha, escritura y 7 juegos",
+                R.drawable.nav_book
+            ) { onUnit(index) }
+        }
     }
 }
 

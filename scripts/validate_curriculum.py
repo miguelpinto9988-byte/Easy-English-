@@ -1,45 +1,80 @@
 #!/usr/bin/env python3
-"""Comprobaciones editoriales y estructurales: no sustituyen revisión docente."""
+"""Validación automatizada estructural. No sustituye revisión humana."""
 import json
 import re
 from collections import Counter
 from pathlib import Path
 
 root=Path(__file__).resolve().parents[1]
-dataset=json.loads((root/"app/src/main/assets/lessons-v3.json").read_text(encoding="utf-8"))
-assert dataset["schema"]==3
-lessons=dataset["lessons"]
-assert len(lessons)==156, "Se esperan 156 unidades"
-counts=Counter(l["level"] for l in lessons)
-assert counts=={"A0":12,"A1":24,"A2":24,"B1":24,"B2":24,"C1":24,"C2":24},counts
-assert len({l["id"] for l in lessons})==156
-assert len({tuple(l["dialogue"]) for l in lessons})==156
+directory=root/"app/src/main/assets/curriculum"
+levels={"A0":12,"A1":24,"A2":24,"B1":24,"B2":24,"C1":24,"C2":24}
+units=[]
 errors=[]
-for l in lessons:
+
+for level,count in levels.items():
+    f=directory/(level.lower()+".json")
+    data=json.loads(f.read_text(encoding="utf-8"))
+    if data.get("schema")!=4 or data.get("level")!=level:
+        errors.append(f"{f.name}: esquema o nivel incorrecto")
+    lessons=data.get("lessons",[])
+    if len(lessons)!=count:
+        errors.append(f"{f.name}: tiene {len(lessons)} unidades; se esperaban {count}")
+    units+=lessons
+    numbers=sorted(x["number"] for x in lessons)
+    if numbers!=list(range(1,count+1)):
+        errors.append(f"{f.name}: números discontinuos")
+
+ids=set()
+rules=set()
+dialogues=set()
+reading_checks=0
+examples=0
+for l in units:
     lid=l["id"]
-    if l["reviewStatus"]!="draft_unreviewed":
-        errors.append(f"{lid}: el estado editorial debe reflejar una revisión externa pendiente")
-    if len(l["title"])<4 or len(l["specificRule"])<35:
-        errors.append(f"{lid}: teoría o título insuficiente")
-    if len(l["examples"])<4 or any(not e.get("en") or not e.get("es") for e in l["examples"]):
-        errors.append(f"{lid}: mínimo de cuatro ejemplos bilingües")
-    if len(l["rubric"])!=3 or len(l["teachingSequence"])<4:
-        errors.append(f"{lid}: rúbricas o etapas insuficientes")
-    if len(l["dialogue"])!=2 or any(": " not in turn for turn in l["dialogue"]):
-        errors.append(f"{lid}: diálogo mal formado")
-    if l["level"] in {"B1","B2","C1","C2"} and len(l["readingExtended"])<170:
-        errors.append(f"{lid}: lectura avanzada muy corta")
-    c=l["cloze"]
-    if c["prompt"].count("___")!=1 or len(c["options"])!=4:
-        errors.append(f"{lid}: ejercicio de completar no válido")
-    if len(set(c["options"]))!=4 or c["options"].count(c["answer"])!=1:
-        errors.append(f"{lid}: opciones duplicadas o respuesta no única")
-    if not l["objective"] or not l["writing"] or not l["speaking"]:
-        errors.append(f"{lid}: objetivo u otra destreza incompleta")
-    if not re.fullmatch(r"[a-z][0-2]-[0-9]{2}|[abc][12]-[0-9]{2}",lid):
-        errors.append(f"{lid}: identificador inválido")
+    if lid in ids:errors.append(f"{lid}: identificador duplicado")
+    ids.add(lid)
+    if l.get("reviewStatus")!="draft_unreviewed":
+        errors.append(f"{lid}: estado de revisión no verificado")
+    rule=l.get("specificRule","")
+    if len(rule)<50 or rule in rules:errors.append(f"{lid}: regla particular ausente o duplicada")
+    rules.add(rule)
+    d=tuple(l.get("dialogue",[]))
+    if len(d)!=2 or d in dialogues or any(": " not in turn for turn in d):
+        errors.append(f"{lid}: diálogo no válido o repetido")
+    dialogues.add(d)
+    if len(l.get("learningOutcomes",[]))<3:
+        errors.append(f"{lid}: objetivos insuficientes")
+    if len(l.get("teachingNotes",[]))<5:
+        errors.append(f"{lid}: teoría interactiva insuficiente")
+    e=l.get("examples",[])
+    examples+=len(e)
+    if len(e)<4 or any(not x.get("en") or not x.get("es") for x in e):
+        errors.append(f"{lid}: faltan ejemplos bilingües")
+    checks=l.get("readingChecks",[])
+    reading_checks+=len(checks)
+    if len(checks)!=2 or checks[0].get("answer","") not in d[1]:
+        errors.append(f"{lid}: lectura o evidencia incoherente")
+    if checks[1].get("answer")!=l.get("title"):
+        errors.append(f"{lid}: identificación de tema incoherente")
+    c=l.get("cloze",{})
+    if c.get("prompt","").count("___")!=1 or len(c.get("options",[]))!=4:
+        errors.append(f"{lid}: pregunta de completar mal formada")
+    if c.get("options",[]).count(c.get("answer"))!=1 or len(set(c.get("options",[])))!=4:
+        errors.append(f"{lid}: respuesta ambigua o distractores duplicados")
+    if len(l.get("rubric",[]))!=3:
+        errors.append(f"{lid}: criterios de autoevaluación insuficientes")
+    if l.get("sourceMeta",{}).get("origin")!="original_easy_english":
+        errors.append(f"{lid}: fuente editorial no identificada")
+    if not l.get("productionTask",{}).get("speaking"):
+        errors.append(f"{lid}: actividad oral faltante")
+    if len(l.get("contextualText",""))<len("\n".join(d)):
+        errors.append(f"{lid}: contexto de lectura insuficiente")
+
+if len(units)!=156:
+    errors.append(f"Total incorrecto: {len(units)}")
 if errors:
     raise SystemExit("\n".join(errors))
-print("VALIDADO (estructura): 156 unidades, 156 diálogos, 39 bancos de cloze,")
-print("24 lecturas avanzadas; rúbricas y actividades presentes.")
-print("ATENCIÓN: revisión docente, licencias y validez psicométrica NO certificadas.")
+print(f"OK: {len(units)} unidades, {len(rules)} reglas particulares, "
+      f"{len(dialogues)} diálogos originales, {reading_checks} ejercicios de lectura "
+      f"y {examples} ejemplos bilingües.")
+print("IMPORTANTE: este control NO certifica precisión lingüística ni validez pedagógica.")

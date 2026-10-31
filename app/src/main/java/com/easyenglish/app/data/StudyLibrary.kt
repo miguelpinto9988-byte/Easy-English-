@@ -6,23 +6,29 @@ import kotlin.random.Random
 
 data class StudyLine(val english: String, val spanish: String)
 data class ClozeItem(val prompt: String, val answer: String, val options: List<String>, val explanation: String)
+data class ReadingCheck(val id: String, val prompt: String, val answer: String, val evidence: String, val feedback: String)
 data class StudyLesson(
     val id: String, val level: String, val number: Int, val title: String,
     val objective: String, val rule: String, val attention: String,
     val examples: List<StudyLine>, val reading: String, val writing: String, val speaking: String,
     val specificRule: String, val dialogue: List<String>,
     val readingExtended: String, val rubric: List<String>, val cloze: ClozeItem,
-    val editorialStatus: String = "draft_unreviewed"
+    val editorialStatus: String = "draft_unreviewed",
+    val learningOutcomes: List<String> = emptyList(),
+    val contextualText: String = "",
+    val readingChecks: List<ReadingCheck> = emptyList(),
+    val sourceReview: String = ""
 )
 
 object StudyLibrary {
-    private var cache: List<StudyLesson>? = null
+    private val cache=mutableMapOf<String,List<StudyLesson>>()
 
     @Synchronized
-    fun lessons(context: Context): List<StudyLesson> {
-        cache?.let { return it }
-        val json=context.assets.open("lessons-v3.json").bufferedReader().use { JSONObject(it.readText()) }
-        require(json.getInt("schema")==3) { "Versión curricular incorrecta" }
+    fun byLevel(context: Context,level: String): List<StudyLesson> {
+        require(level in listOf("A0","A1","A2","B1","B2","C1","C2"))
+        cache[level]?.let { return it }
+        val json=context.assets.open("curriculum/"+level.lowercase()+".json").bufferedReader().use { JSONObject(it.readText()) }
+        require(json.getInt("schema")==4 && json.getString("level")==level) { "Versión curricular incorrecta" }
         val a=json.getJSONArray("lessons")
         val output=(0 until a.length()).map { i ->
             val o=a.getJSONObject(i)
@@ -30,6 +36,8 @@ object StudyLibrary {
             val dialogue=o.getJSONArray("dialogue")
             val rubric=o.getJSONArray("rubric")
             val c=o.getJSONObject("cloze")
+            val outcomes=o.getJSONArray("learningOutcomes")
+            val checks=o.getJSONArray("readingChecks")
             val options=c.getJSONArray("options")
             StudyLesson(
                 id=o.getString("id"),level=o.getString("level"),number=o.getInt("number"),
@@ -50,29 +58,45 @@ object StudyLibrary {
                     c.getString("prompt"),c.getString("answer"),
                     (0 until options.length()).map(options::getString),c.getString("explanation")
                 ),
-                editorialStatus=o.optString("reviewStatus","draft_unreviewed")
+                editorialStatus=o.optString("reviewStatus","draft_unreviewed"),
+                learningOutcomes=(0 until outcomes.length()).map(outcomes::getString),
+                contextualText=o.getString("contextualText"),
+                readingChecks=(0 until checks.length()).map { k ->
+                    val x=checks.getJSONObject(k)
+                    ReadingCheck(x.getString("id"),x.getString("prompt"),x.getString("answer"),x.getString("evidence"),x.getString("feedback"))
+                },
+                sourceReview=o.getJSONObject("sourceMeta").optString("review","automated_structure_only")
             )
         }
-        require(output.size==156 && output.map { it.id }.distinct().size==156)
-        require(output.all { it.examples.size>=4 && it.dialogue.size==2 && it.cloze.answer in it.cloze.options })
-        cache=output
+        require(output.size==(if(level=="A0")12 else 24) && output.map { it.id }.distinct().size==output.size)
+        require(output.all {
+            it.examples.size>=4 && it.dialogue.size==2 && it.cloze.answer in it.cloze.options &&
+            it.learningOutcomes.size>=3 && it.readingChecks.size>=2
+        })
+        cache[level]=output
         return output
     }
 
+    fun lessons(context: Context): List<StudyLesson> =
+        listOf("A0","A1","A2","B1","B2","C1","C2").flatMap { byLevel(context,it) }
+
     fun find(context: Context,level: String,unit: Int): StudyLesson? =
-        lessons(context).firstOrNull { it.level==level && it.number==unit+1 }
+        byLevel(context,level).firstOrNull { it.number==unit+1 }
 
     fun levelLines(context: Context,level: String): List<StudyLine> =
-        lessons(context).filter { it.level==level }.flatMap { it.examples }
+        byLevel(context,level).flatMap { it.examples }
+
+    fun levelTitles(context: Context,level: String): List<String> =
+        byLevel(context,level).map { it.title }
 
     fun levelDialogues(context: Context,level: String): List<String> =
-        lessons(context).filter { it.level==level }
+        byLevel(context,level)
             .map { it.dialogue[1].substringAfter(": ").trim() }.distinct()
 }
 
 enum class StudyGame(val label: String) {
     MEANING("Comprensión"),TRANSLATION("Traducción"),CLOZE("Completar"),
-    DIALOGUE("Diálogos"),ORDER("Ordenar"),MEMORY("Tarjetas")
+    DIALOGUE("Diálogos"),TOPIC("Tema del texto"),ORDER("Ordenar"),MEMORY("Tarjetas")
 }
 data class GeneratedQuestion(
     val game: StudyGame, val prompt: String, val answer: String,
@@ -89,9 +113,12 @@ data class GeneratedQuestion(
 object PracticeGenerator {
     fun create(
         lesson: StudyLesson, bank: List<StudyLine>, mode: StudyGame,
-        dialogueBank: List<String> = emptyList(), random: Random = Random.Default
+        dialogueBank: List<String> = emptyList(),
+        titleBank: List<String> = emptyList(),
+        avoidAnswers: Set<String> = emptySet(), random: Random = Random.Default
     ): GeneratedQuestion {
-        val line=lesson.examples.random(random)
+        val candidates=lesson.examples.filter { it.english !in avoidAnswers && it.spanish !in avoidAnswers }
+        val line=(candidates.ifEmpty { lesson.examples }).random(random)
         if(mode==StudyGame.MEMORY) return GeneratedQuestion(
             mode,line.english,line.spanish,emptyList(),line.english,line.spanish,
             skill="retrieval"
@@ -104,6 +131,12 @@ object PracticeGenerator {
                 "La secuencia se compara con el modelo; otras formulaciones pueden ser válidas.",
                 "syntax"
             )
+        }
+        if(mode==StudyGame.TOPIC) {
+            val others=titleBank.filter { it!=lesson.title }.distinct().shuffled(random).take(3)
+            return GeneratedQuestion(mode,"Después de leer esta unidad, ¿qué tema estamos estudiando?\n\n"+lesson.dialogue.joinToString(" "),
+                lesson.title,(others+lesson.title).shuffled(random),lesson.title,lesson.title,
+                explanation="Relaciona el contenido con el objetivo y el encabezado de la unidad.",skill="reading")
         }
         if(mode==StudyGame.CLOZE) {
             val c=lesson.cloze
