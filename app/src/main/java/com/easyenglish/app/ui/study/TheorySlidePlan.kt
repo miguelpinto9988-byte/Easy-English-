@@ -35,10 +35,10 @@ object TheorySlidePlan {
     )
 
     fun build(lesson: StudyLesson): List<TheoryFrame> {
-        require(lesson.examples.size >= 4) { "Faltan ejemplos: \${lesson.id}" }
-        require(lesson.dialogue.size == 2) { "Falta diálogo: \${lesson.id}" }
-        require(lesson.readingChecks.size >= 2) { "Falta comprensión: \${lesson.id}" }
-        require(lesson.learningOutcomes.size >= 3) { "Faltan objetivos: \${lesson.id}" }
+        require(lesson.examples.size >= 4) { "Faltan ejemplos: ${lesson.id}" }
+        require(lesson.dialogue.size == 2) { "Falta diálogo: ${lesson.id}" }
+        require(lesson.readingChecks.size >= 2) { "Falta comprensión: ${lesson.id}" }
+        require(lesson.learningOutcomes.size >= 3) { "Faltan objetivos: ${lesson.id}" }
         val frames = mutableListOf<TheoryFrame>()
         fun add(kind: String, label: String, lead: String, body: String,
                 note: String = "", bullets: List<String> = emptyList(),
@@ -48,18 +48,18 @@ object TheorySlidePlan {
             frames += TheoryFrame(i,kind,titles[i],label,lead,body,note,
                 bullets,english,spanish,audioText,art)
         }
-        add("cover","EMPEZAMOS","Unidad \${lesson.number}: \${lesson.title}",
-            lesson.objective,"Nivel \${lesson.level} · Una presentación de 16 diapositivas",
+        add("cover","EMPEZAMOS","Unidad ${lesson.number}: ${lesson.title}",
+            lesson.objective,"Nivel ${lesson.level} · Una presentación de 16 diapositivas",
             bullets=lesson.learningOutcomes.take(3),art=25)
         add("list","AL FINAL PODRÁS","Tres metas para avanzar",
             lesson.objective,bullets=lesson.learningOutcomes.take(3),art=14)
         add("rule","GRAMÁTICA","Regla principal",
             lesson.specificRule,lesson.attention,art=2)
         add("explain","COMPRENDE","Cómo se relacionan las ideas",
-            lesson.rule,"Compara con la regla propia de esta unidad: \${lesson.specificRule}",
+            lesson.rule,"Compara con la regla propia de esta unidad: ${lesson.specificRule}",
             art=26)
         lesson.examples.take(4).forEachIndexed { i,pair ->
-            add("example","MODELO \${i+1} DE 4",
+            add("example","MODELO ${i+1} DE 4",
                 "Observa la frase y su significado",
                 "¿Qué estructura o palabra reconoces?",
                 note="Compara el inglés y el español. Después, crea una variante propia.",
@@ -73,7 +73,7 @@ object TheorySlidePlan {
             lesson.attention,lesson.specificRule,art=11)
         add("reading","LECTURA","Lee el texto con atención",
             lesson.contextualText,
-            "Encuentra al menos una palabra o estructura relacionada con \${lesson.title}.",art=5)
+            "Encuentra al menos una palabra o estructura relacionada con ${lesson.title}.",art=5)
         add("questions","COMPRENSIÓN","Comprueba si has entendido",
             lesson.readingChecks[0].prompt,
             lesson.readingChecks[1].prompt,
@@ -89,9 +89,9 @@ object TheorySlidePlan {
         add("cloze","RETO FINAL","Completa la frase del modelo",
             lesson.cloze.prompt,"Piensa antes de ver la solución.",
             bullets=lesson.cloze.options,art=15)
-        add("recap","REPASO","Lo importante de \${lesson.title}",
+        add("recap","REPASO","Lo importante de ${lesson.title}",
             lesson.specificRule,
-            "Solución del reto: \${lesson.cloze.answer}. \${lesson.cloze.explanation}",
+            "Solución del reto: ${lesson.cloze.answer}. ${lesson.cloze.explanation}",
             bullets=lesson.learningOutcomes.take(3),art=21)
         check(frames.size == COUNT)
         return frames
