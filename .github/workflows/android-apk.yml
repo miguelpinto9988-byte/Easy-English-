@@ -26,6 +26,9 @@ jobs:
       - name: Validar iconografía PNG
         run: python3 scripts/validate_icon_atlas.py
 
+      - name: Verificar fuentes de diapositivas PNG
+        run: python3 scripts/validate_theory_slide_content.py
+
       - name: Preparar Java 17
         uses: actions/setup-java@v4
         with:
