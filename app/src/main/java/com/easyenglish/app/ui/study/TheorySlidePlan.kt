@@ -73,7 +73,7 @@ object TheorySlidePlan {
             lesson.attention,lesson.specificRule,art=11)
         add("reading","LECTURA","Lee el texto con atención",
             lesson.contextualText,
-            "Encuentra al menos una palabra o estructura relacionada con ${lesson.title}.",art=5)
+            lesson.reading+"\n\n"+lesson.readingExtended,art=5)
         add("questions","COMPRENSIÓN","Comprueba si has entendido",
             lesson.readingChecks[0].prompt,
             lesson.readingChecks[1].prompt,
