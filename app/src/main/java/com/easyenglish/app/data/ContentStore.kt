@@ -47,7 +47,7 @@ class ContentStore(context: Context) {
 
     private fun fileFor(pack: DownloadPack): File {
         validate(pack)
-        return File(root, pack.id + if (pack.type == "lesson") ".json" else ".mp3")
+        return File(root, pack.id + (if (pack.type == "lesson") ".json" else ".mp3"))
     }
 
     fun hasPack(pack: DownloadPack): Boolean = try {
