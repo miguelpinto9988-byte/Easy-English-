@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "items": [
+    {
+      "id": "hello-pack-1",
+      "title": "Saludos y presentaciones (extra)",
+      "description": "Mini leccion descargable de saludos estadounidenses para estudiar sin internet.",
+      "type": "lesson",
+      "url": "https://raw.githubusercontent.com/miguelpinto9988-byte/Easy-English-/main/content/packs/hello-pack-1.json",
+      "sha256": "29a860240c09aeb45a402eb1df3b36b3f67f7a5a3f3c0928412767e1bc53567d"
+    }
+  ]
+}

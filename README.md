@@ -1,33 +1,32 @@
-# Easy English — Android
+# Easy English — Android v0.3.0
 
-App nativa Android con Kotlin y Jetpack Compose. Requiere **Android 10 (API 29)** o posterior.
+App Android nativa con Kotlin y Jetpack Compose. Mínimo: **Android 10 (API 29)**.
 
-## Pantalla de inicio (V4)
+## Pantallas
 
-La app muestra el zorrito con su libro en posición fija; **se eliminó por completo la animación del libro abriéndose**.
+- Splash con zorrito y libro abierto (sin animación de abrir el libro).
+- Creación y edición de perfil local, foto convertida a PNG.
+- Menú lateral único, abierto desde avatar. Inicio, Niveles, Mi clase, Progreso, Editar perfil, Prueba, Preferencias y Descargas.
+- Iconos PNG con separación de **6 dp** hasta la etiqueta.
+- Material 3 con tipografía **siempre en negrita**.
+- Estructura A0 a C2 con 156 **títulos de unidades**, todavía sin el contenido completo de las 156 lecciones.
+- Teoría interactiva de ejemplo: verbo *to be*.
+- Examen de muestra (no validado, no certifica ni asigna niveles MCER; Writing y Speaking no se califican).
 
-- Mascota de zorro con gafas azules y bufanda, integrada como PNG optimizado.
-- Parpadeos y leve movimiento de la mascota.
-- Fondo azul con destellos animados.
-- 15 palabras de vocabulario que ascienden, una tras otra, desde la zona del libro.
-- Texto `Easy English` que se escribe progresivamente.
-- Barra de progreso animada.
+## Descargas y privacidad
 
-La animación dura aproximadamente 4,4 segundos y se ejecuta cuando se inicia una actividad nueva. **La barra representa la duración de esta presentación**, no el avance real de una descarga ni de una carga de red; todavía no hay tareas de inicialización para medir. Una futura integración podrá sincronizarla con tareas reales y reducir el tiempo de espera.
+La aplicación puede utilizarse sin internet con lo que tiene instalado. Solo consulta el catálogo al seleccionar **Preferencias → Descargar contenidos → Buscar**. El catálogo oficial se publica en **content/manifest.json** de este repositorio. Descargas en HTTPS desde la ruta permitida de GitHub, con verificación SHA-256 y máximo de 8 MB por paquete; admite lecciones JSON y audios MP3.
+
+Los perfiles se guardan de forma privada en el dispositivo; el módulo de descargas **no envía nombre, fotografía ni respuestas a un servidor**. La aplicación no solicita almacenamiento externo ni acceso permanente a la galería.
 
 ## Compilación
 
-Requisitos: Android SDK 37, Java 17, Gradle 9.5.0, Android Gradle Plugin 9.3.1 y Kotlin 2.4.21.
+Java 17, Gradle 9.5.0, Android Gradle Plugin 9.3.1, Kotlin 2.4.21, SDK 37 y Compose BOM 2026.09.00.
 
-Con Gradle instalado: `gradle :app:assembleDebug`.
+Usar Android Studio o ejecutar: gradle :app:assembleDebug
 
-También puedes usar el flujo de [GitHub Actions](../../actions): **Generar APK de prueba**. Una vez completado correctamente, descarga el artefacto `Easy-English-debug-APK`.
+El flujo de GitHub Actions **Generar APK de prueba** crea el artefacto descargable tras una compilación exitosa. La APK debug no es para publicar en tiendas.
 
-El APK de depuración no está firmado con credenciales de publicación; debe usarse solo para pruebas. La compilación y las pruebas en dispositivos Android 10+ todavía necesitan verificarse.
+## Próximos pasos
 
-## Estructura
-
-- `app/src/main/java/com/easyenglish/app/ui/splash/EasyEnglishSplash.kt`: secuencia en Jetpack Compose.
-- `app/src/main/res/drawable-nodpi/fox_mascot.png`: recurso de la mascota.
-- `app/src/main/java/com/easyenglish/app/MainActivity.kt`: transición a la pantalla inicial.
-- `.github/workflows/android-apk.yml`: compilación automática de APK de prueba.
+Realizar pruebas en Android 10+, desarrollar las 156 unidades, crear exámenes reales por destrezas y validar los instrumentos de clasificación. La prueba actual es **solo una demostración de interfaz**.
