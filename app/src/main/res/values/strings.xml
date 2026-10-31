@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Easy English</string>
+    <string name="welcome_message">Bienvenido a Easy English.</string>
+    <string name="starting_point">La base Android está preparada para desarrollar tus lecciones de inglés.</string>
+</resources>

@@ -1,0 +1,22 @@
+# Android / Gradle
+.gradle/
+build/
+**/build/
+local.properties
+.cxx/
+.externalNativeBuild/
+
+# IDE
+.idea/
+*.iml
+
+# Artifacts and credentials
+*.apk
+*.aab
+*.jks
+*.keystore
+*.hprof
+
+# Operating systems
+.DS_Store
+Thumbs.db
