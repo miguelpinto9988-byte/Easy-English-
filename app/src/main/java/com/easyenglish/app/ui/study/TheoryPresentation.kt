@@ -2,14 +2,18 @@ package com.easyenglish.app.ui.study
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -17,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +50,17 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
     val context=LocalContext.current
     var index by rememberSaveable(lesson.id) { mutableStateOf(0) }
     var translations by rememberSaveable(lesson.id) { mutableStateOf(false) }
+    var expanded by rememberSaveable(lesson.id,index) { mutableStateOf(false) }
+    val fullContent=when(index) {
+        0 -> lesson.objective+"\n\n"+lesson.learningOutcomes.joinToString("\n\n")
+        1 -> lesson.specificRule+"\n\nConsejo: "+lesson.attention
+        2 -> lesson.rule+"\n\n"+lesson.specificRule
+        3 -> lesson.examples.joinToString("\n\n") { it.english+"\n"+it.spanish }
+        4 -> lesson.dialogue.joinToString("\n\n")
+        5 -> lesson.attention+"\n\n"+lesson.specificRule
+        6 -> lesson.contextualText
+        else -> lesson.writing+"\n\n"+lesson.speaking
+    }
     val bitmap by produceState<ImageBitmap?>(null,lesson.id,index,translations) {
         value=null
         value=withContext(Dispatchers.IO) {
@@ -79,6 +95,24 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                     modifier=Modifier.fillMaxWidth().aspectRatio(900f/1480f),
                     contentScale=ContentScale.Fit)
             }
+        }
+        TextButton(onClick={expanded=true},modifier=Modifier.fillMaxWidth()) {
+            EasyIcon(Art.Reading,Modifier.size(26.dp))
+            Text("Leer el contenido completo de esta diapositiva",fontSize=12.sp)
+        }
+        if(expanded) {
+            AlertDialog(
+                onDismissRequest={expanded=false},
+                title={Text(TheorySlideRenderer.titles[index])},
+                text={
+                    Column(Modifier.heightIn(max=470.dp).verticalScroll(rememberScrollState())) {
+                        Text(fullContent,fontSize=15.sp,color=Color(0xFF153B80))
+                    }
+                },
+                confirmButton={
+                    TextButton(onClick={expanded=false}) { Text("Cerrar") }
+                }
+            )
         }
         Row(verticalAlignment=Alignment.CenterVertically,
             horizontalArrangement=Arrangement.spacedBy(10.dp)) {
