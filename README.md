@@ -37,3 +37,5 @@ Las lecciones son material inicial ampliado, no programas completos de cientos d
 ## Pendiente
 
 Revisión docente de las 156 unidades, calibración de pruebas de clasificación, más materiales genuinamente distintos por unidad, comprensión auditiva con voces grabadas autorizadas, y pruebas de la APK en dispositivos reales.
+
+Verificación CI de la biblioteca modular 0.6.0: integridad de unidades y compilación Android.
