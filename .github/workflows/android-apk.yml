@@ -38,7 +38,7 @@ jobs:
           gradle-version: '9.5.0'
 
       - name: Compilar APK de depuración
-        run: gradle :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace --no-daemon
 
       - name: Publicar APK de prueba
         uses: actions/upload-artifact@v4
