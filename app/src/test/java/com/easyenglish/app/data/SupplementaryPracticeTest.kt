@@ -98,6 +98,9 @@ class SupplementaryPracticeTest {
                 SupplementaryPractice.game(lessons.first(),lessons,mode,index)
             }
             assertEquals(16,rounds.size)
+            if(mode == StudyGame.CLOZE) {
+                assertEquals(16,rounds.map { it.prompt }.distinct().size)
+            }
             for (question in rounds) {
                 assertTrue(question.prompt.isNotBlank())
                 assertTrue(question.answer.isNotBlank())
