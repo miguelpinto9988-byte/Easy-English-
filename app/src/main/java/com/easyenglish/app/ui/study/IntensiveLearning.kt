@@ -46,7 +46,7 @@ private val Mint=Color(0xFFE0F6EF)
 private val Amber=Color(0xFFFFF0DA)
 
 @Composable
-fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
+fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioStatus: String = "") {
     val context=LocalContext.current
     val stats=remember(context) { PracticeProgressStore(context) }
     val prefs=remember(lesson.id) {
@@ -73,6 +73,7 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
     var showModel by remember(task.id) { mutableStateOf(false) }
     var writing by remember(task.id) { mutableStateOf("") }
     var practiced by remember(task.id) { mutableStateOf(false) }
+    var showTranscript by remember(task.id) { mutableStateOf(false) }
     var showHint by remember(task.id) { mutableStateOf(false) }
     val words=remember(task.id) { task.answer.trim().split(Regex("\\s+")).filter(String::isNotEmpty) }
     val mixed=remember(task.id) { words.mapIndexed { index, word -> index to word }.shuffled(Random(task.id.hashCode())) }
@@ -112,6 +113,13 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
                     OutlinedButton(onClick={onSpeak(task.audioText,0.75f)},modifier=Modifier.fillMaxWidth()) {
                         Text("▶ Repetir lentamente")
                     }
+                    if(audioStatus.isNotBlank()) Text(audioStatus,color=Muted,fontSize=12.sp)
+                    OutlinedButton(onClick={showTranscript=!showTranscript},modifier=Modifier.fillMaxWidth()) {
+                        Text(if(showTranscript)"Ocultar transcripción" else "Ver transcripción (alternativa accesible)")
+                    }
+                    if(showTranscript) Text(task.audioText,color=Navy,fontSize=13.sp)
+                    if(showTranscript) Text("La transcripción permite practicar lectura, pero no sustituye una prueba de comprensión auditiva.",
+                        color=Muted,fontSize=11.sp)
                 }
                 if(task.kind=="speak" && task.answer.isNotBlank()) {
                     OutlinedButton(onClick={onSpeak(task.answer,0.85f)}) {
