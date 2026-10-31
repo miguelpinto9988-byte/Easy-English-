@@ -27,7 +27,8 @@ object SupplementaryPractice {
     }
 
     private fun allLines(levelLessons: List<StudyLesson>): List<StudyLine> =
-        levelLessons.flatMap { it.examples }.distinctBy { it.english to it.spanish }
+        (OriginalPracticeLines.forLevel(levelLessons.first().level) +
+            levelLessons.flatMap { it.examples }).distinctBy { it.english to it.spanish }
 
     /** Dos comprobaciones del diálogo/texto y catorce microlecturas bilingües. */
     fun reading(lesson: StudyLesson, levelLessons: List<StudyLesson>): List<ChoiceExercise> {
@@ -170,6 +171,43 @@ object SupplementaryPractice {
         val dialogues = levelLessons.map { it.dialogue[1].substringAfter(": ").trim() }.distinct()
         val titles = levelLessons.map { it.title }.distinct()
         val rng = Random(seed(lesson, mode.ordinal * 100 + round))
+
+        // Cuatro modelos de esta unidad + doce de repaso. Los originales nuevos
+        // se intercalan para que no se repita la misma frase en la serie.
+        if (mode in setOf(StudyGame.MEANING, StudyGame.TRANSLATION,
+                StudyGame.ORDER, StudyGame.MEMORY)) {
+            val local = lesson.examples.distinctBy { it.english to it.spanish }
+            val localEnglish = local.map { it.english }.toSet()
+            val review = bank.filter { it.english !in localEnglish }
+            val line = if(round < 4) local[round] else review[(lesson.number + round - 4) % review.size]
+            val random = Random(seed(lesson, mode.ordinal * 100 + round))
+            if(mode==StudyGame.MEMORY) return GeneratedQuestion(
+                mode,line.english,line.spanish,emptyList(),line.english,line.spanish,
+                explanation="Tarjeta de recuperación de vocabulario.",skill="retrieval"
+            )
+            if(mode==StudyGame.ORDER) {
+                val tokens=line.english.trim().split(Regex("\\s+"))
+                return GeneratedQuestion(
+                    mode,"Ordena las palabras como en el modelo de referencia.",
+                    line.english,emptyList(),line.english,line.spanish,
+                    tokenOrder=tokens.shuffled(random),
+                    explanation="Otras secuencias pueden ser lingüísticamente correctas.",
+                    skill="syntax"
+                )
+            }
+            val toSpanish=mode==StudyGame.MEANING
+            val answer=if(toSpanish)line.spanish else line.english
+            val values=bank.map { if(toSpanish)it.spanish else it.english }
+            return GeneratedQuestion(
+                mode,
+                if(toSpanish)"Selecciona el significado de esta frase:\n\n"+line.english
+                else "Selecciona la traducción correcta:\n\n"+line.spanish,
+                answer,options(answer,values,seed(lesson,mode.ordinal*100+round)),
+                line.english,line.spanish,
+                explanation="Compara la respuesta con el modelo bilingüe original.",
+                skill="vocabulary"
+            )
+        }
         // A0 tiene doce unidades. Las cuatro rondas adicionales varían la consigna
         // para evitar reutilizar literalmente las preguntas de tema y diálogo.
         if (mode == StudyGame.TOPIC && round >= levelLessons.size) {
