@@ -257,11 +257,11 @@ private fun Presentation(lesson: StudyLesson) {
 
 @Composable
 private fun Games(lesson: StudyLesson, levelLessons: List<StudyLesson>, tracker: PracticeProgressStore) {
-    var mode by remember(lesson.id) { mutableStateOf(StudyGame.MEANING) }
-    var round by remember(lesson.id, mode) { mutableStateOf(0) }
-    var finished by remember(lesson.id, mode) { mutableStateOf(false) }
-    var points by remember(lesson.id, mode) { mutableStateOf(0) }
-    var streak by remember(lesson.id, mode) { mutableStateOf(0) }
+    var mode by rememberSaveable(lesson.id) { mutableStateOf(StudyGame.MEANING) }
+    var round by rememberSaveable(lesson.id, mode) { mutableStateOf(0) }
+    var finished by rememberSaveable(lesson.id, mode) { mutableStateOf(false) }
+    var points by rememberSaveable(lesson.id, mode) { mutableStateOf(0) }
+    var streak by rememberSaveable(lesson.id, mode) { mutableStateOf(0) }
     val task=remember(lesson.id,mode,round) {
         SupplementaryPractice.game(lesson,levelLessons,mode,round)
     }
