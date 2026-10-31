@@ -211,7 +211,7 @@ object SupplementaryPractice {
             val alternatives = bank.flatMap { it.english.split(Regex("\\s+")) }
                 .map { it.trim('?', '!', '.', ',', ';', ':') }
                 .filter { it.isNotBlank() && it != word }.distinct()
-            val masked = model.english.replaceFirst(word, "_____")
+            val masked = Regex("\\b" + Regex.escape(word) + "\\b").replaceFirst(model.english, "_____")
             return GeneratedQuestion(
                 mode,
                 "Completa exactamente como en el modelo:\n\n" + masked +
