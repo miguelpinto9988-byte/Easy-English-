@@ -56,6 +56,7 @@ import com.easyenglish.app.data.StudyGame
 import com.easyenglish.app.data.StudyLesson
 import com.easyenglish.app.data.StudyLibrary
 import com.easyenglish.app.data.StudyLine
+import com.easyenglish.app.data.SupplementaryPractice
 import com.easyenglish.app.data.PracticeProgressStore
 import java.util.Locale
 
@@ -72,6 +73,7 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
     val context=LocalContext.current
     val lesson=remember(level,unit) { StudyLibrary.find(context,level,unit) }
     val lines=remember(level) { StudyLibrary.levelLines(context,level) }
+    val levelLessons=remember(level) { StudyLibrary.byLevel(context,level) }
     val dialogueBank=remember(level) { StudyLibrary.levelDialogues(context,level) }
     val titleBank=remember(level) { StudyLibrary.levelTitles(context,level) }
     val progressStore=remember(context) { PracticeProgressStore(context) }
@@ -127,9 +129,9 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             when(tab){
                 "Ruta intensiva" -> item { IntensiveLearning(lesson,speak,audioStatus) }
                 "Presentación" -> item { Presentation(lesson) }
-                "Prácticas" -> item { Games(lesson,lines,dialogueBank,titleBank,progressStore) }
-                "Lectura" -> item { Reading(lesson,dialogueBank,titleBank) }
-                "Escucha" -> item { Listening(lesson,lines,speak,audioStatus) }
+                "Prácticas" -> item { Games(lesson,levelLessons,progressStore) }
+                "Lectura" -> item { Reading(lesson,levelLessons) }
+                "Escucha" -> item { Listening(lesson,levelLessons,speak,audioStatus) }
                 "Escritura" -> item { Writing(lesson) }
             }
             item {
@@ -252,272 +254,334 @@ private fun Presentation(lesson: StudyLesson) {
     }
 }
 
+
 @Composable
-private fun Games(lesson: StudyLesson, bank: List<StudyLine>, dialogueBank: List<String>, titleBank: List<String>, tracker: PracticeProgressStore) {
+private fun Games(lesson: StudyLesson, levelLessons: List<StudyLesson>, tracker: PracticeProgressStore) {
     var mode by remember(lesson.id) { mutableStateOf(StudyGame.MEANING) }
-    var round by remember(lesson.id) { mutableStateOf(0) }
-    var points by remember(lesson.id) { mutableStateOf(0) }
-    var streak by remember(lesson.id) { mutableStateOf(0) }
-    val recent=remember(lesson.id,mode) { mutableStateListOf<String>() }
+    var round by remember(lesson.id, mode) { mutableStateOf(0) }
+    var finished by remember(lesson.id, mode) { mutableStateOf(false) }
+    var points by remember(lesson.id, mode) { mutableStateOf(0) }
+    var streak by remember(lesson.id, mode) { mutableStateOf(0) }
     val task=remember(lesson.id,mode,round) {
-        PracticeGenerator.create(lesson,bank,mode,dialogueBank,titleBank,recent.toSet())
+        SupplementaryPractice.game(lesson,levelLessons,mode,round)
     }
     var selected by remember(task) { mutableStateOf("") }
     var validated by remember(task) { mutableStateOf(false) }
     var flip by remember(task) { mutableStateOf(false) }
+    var reviewed by remember(task) { mutableStateOf(false) }
     var order by remember(task) { mutableStateOf(listOf<Int>()) }
     val correct=if(mode==StudyGame.ORDER) {
         order.map { task.tokenOrder[it] }.joinToString(" ")==task.answer
     } else selected==task.answer
 
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Juegos con generación automática","¡Entrena de otra manera!")
-        Text("Ejercicios variados de tu nivel. Los intentos se crean al momento y no ocupan almacenamiento permanente.",color=Muted,fontSize=12.sp)
+        Heading("Juegos · 16 ejercicios por modalidad","Práctica y repaso del nivel")
+        Text("Cada juego tiene una serie de 16 rondas. Parte de los modelos se reutiliza entre unidades.",
+            color=Muted,fontSize=12.sp)
         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             StudyGame.entries.forEach { game ->
-                FilterChip(selected=mode==game,onClick={mode=game;round=0},label={Text(game.label,fontSize=12.sp)})
+                FilterChip(selected=mode==game,
+                    onClick={mode=game},
+                    label={Text(game.label,fontSize=12.sp)})
             }
         }
-        Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-            Text("⭐ Puntos: "+points,color=Ocean,fontSize=12.sp)
-            Text("🔥 Racha: "+streak,color=Deep,fontSize=12.sp)
-            Text(tracker.nextReviewLabel(lesson.id,"grammar"),color=Muted,fontSize=10.sp)
-        }
-        Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(19.dp)) {
-            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
-                if(mode==StudyGame.MEMORY){
-                    Text("Tarjeta de repaso · Toca para descubrir el significado",color=Muted,fontSize=12.sp)
-                    Box(Modifier.fillMaxWidth().height(150.dp).background(if(flip) Mint else Soft,RoundedCornerShape(15.dp))
-                        .clickable { flip=!flip },contentAlignment=Alignment.Center) {
-                        Text(if(flip)task.spanish else task.english,color=Deep,fontSize=20.sp,textAlign=TextAlign.Center,modifier=Modifier.padding(12.dp))
-                    }
-                    Text("Recupera el significado antes de voltear la tarjeta.",color=Muted,fontSize=11.sp)
-                } else {
-                    Text(if(mode==StudyGame.ORDER)"ORDENAR PALABRAS" else "ELIGE UNA RESPUESTA",color=Ocean,fontSize=11.sp)
-                    Text(task.prompt,color=Deep,fontSize=18.sp,lineHeight=24.sp)
-                    if(mode==StudyGame.ORDER) {
-                        Card(colors=CardDefaults.cardColors(containerColor=Soft)) {
-                            Text(
-                                if(order.isEmpty())"Toca las palabras de abajo"
-                                else order.map { task.tokenOrder[it] }.joinToString(" "),
-                                modifier=Modifier.fillMaxWidth().padding(13.dp),
-                                color=Deep,fontSize=14.sp
-                            )
+        LinearProgressIndicator(
+            progress={ if(finished) 1f else round.toFloat()/SupplementaryPractice.COUNT },
+            modifier=Modifier.fillMaxWidth())
+        Text((if(finished)16 else round+1).toString()+
+            " de 16 · "+mode.label+" · Puntos: "+points+" · Racha: "+streak,
+            color=Ocean,fontSize=12.sp)
+        if(finished) {
+            Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
+                Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                    Text("Serie de 16 ejercicios finalizada",color=Deep,fontSize=17.sp)
+                    Text("Tu puntuación en esta serie: "+points,color=Deep,fontSize=13.sp)
+                    Button(onClick={round=0;finished=false;points=0;streak=0},
+                        modifier=Modifier.fillMaxWidth()) { Text("Repetir esta serie") }
+                }
+            }
+        } else {
+            Card(colors=CardDefaults.cardColors(containerColor=Color.White),
+                shape=RoundedCornerShape(19.dp)) {
+                Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
+                    if(mode==StudyGame.MEMORY) {
+                        Text("Tarjeta "+(round+1)+" de 16 · Intenta recordar antes de descubrir.",
+                            color=Muted,fontSize=12.sp)
+                        Box(Modifier.fillMaxWidth().height(150.dp)
+                            .background(if(flip) Mint else Soft,RoundedCornerShape(15.dp))
+                            .clickable { flip=!flip },contentAlignment=Alignment.Center) {
+                            Text(if(flip)task.spanish else task.english,color=Deep,fontSize=20.sp,
+                                textAlign=TextAlign.Center,modifier=Modifier.padding(12.dp))
                         }
-                        Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                            task.tokenOrder.forEachIndexed { i,token ->
-                                if(!order.contains(i)) OutlinedButton(onClick={if(!validated)order=order+i else Unit}) {
-                                    Text(token,fontSize=11.sp)
+                        if(flip&&!reviewed) {
+                            OutlinedButton(onClick={
+                                tracker.record(lesson.id,task.skill,false)
+                                streak=0;reviewed=true
+                            },modifier=Modifier.fillMaxWidth()) { Text("Necesito repasarla") }
+                            Button(onClick={
+                                tracker.record(lesson.id,task.skill,true)
+                                points+=10;streak++;reviewed=true
+                            },modifier=Modifier.fillMaxWidth()) { Text("Recordé la respuesta") }
+                        }
+                    } else {
+                        Text(if(mode==StudyGame.ORDER)"ORDENAR PALABRAS" else "ELIGE UNA RESPUESTA",
+                            color=Ocean,fontSize=11.sp)
+                        Text(task.prompt,color=Deep,fontSize=17.sp,lineHeight=23.sp)
+                        if(mode==StudyGame.ORDER) {
+                            Card(colors=CardDefaults.cardColors(containerColor=Soft)) {
+                                Text(if(order.isEmpty())"Toca las palabras de abajo"
+                                    else order.map { task.tokenOrder[it] }.joinToString(" "),
+                                    modifier=Modifier.fillMaxWidth().padding(13.dp),color=Deep,fontSize=14.sp)
+                            }
+                            Row(Modifier.horizontalScroll(rememberScrollState()),
+                                horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                                task.tokenOrder.forEachIndexed { i,token ->
+                                    if(!order.contains(i)) OutlinedButton(
+                                        onClick={order=order+i},enabled=!validated) {
+                                        Text(token,fontSize=11.sp)
+                                    }
+                                }
+                            }
+                            OutlinedButton(onClick={order=emptyList()},
+                                enabled=!validated&&order.isNotEmpty()) { Text("Borrar orden") }
+                        } else {
+                            task.options.forEach { option ->
+                                OutlinedButton(onClick={selected=option},enabled=!validated,
+                                    modifier=Modifier.fillMaxWidth()) {
+                                    Text((if(selected==option)"● " else "○ ")+option,fontSize=12.sp)
                                 }
                             }
                         }
-                        OutlinedButton(onClick={order=emptyList()},enabled=!validated&&order.isNotEmpty()) { Text("Borrar orden") }
-                    } else {
-                        task.options.forEach { option ->
-                            OutlinedButton(
-                                onClick={if(!validated)selected=option else Unit},
-                                modifier=Modifier.fillMaxWidth(),
-                                enabled=!validated
-                            ) {
-                                Text((if(selected==option)"● " else "○ ")+option,fontSize=12.sp,textAlign=TextAlign.Start)
+                        if(validated) {
+                            Card(colors=CardDefaults.cardColors(containerColor=if(correct)Mint else Orange)) {
+                                Column(Modifier.padding(12.dp)) {
+                                    Text(if(correct)"✓ Respuesta del modelo correcta"
+                                        else "Compara con la respuesta de referencia",color=Deep,fontSize=14.sp)
+                                    Text(task.answer,color=Deep,fontSize=13.sp)
+                                    Text(task.explanation,color=Muted,fontSize=12.sp)
+                                }
                             }
+                        } else Button(onClick={
+                            validated=true
+                            tracker.record(lesson.id,task.skill,correct)
+                            if(correct){points+=10;streak++}else streak=0
+                        },enabled=if(mode==StudyGame.ORDER)order.size==task.tokenOrder.size
+                            else selected.isNotBlank(),modifier=Modifier.fillMaxWidth()) {
+                            Text("Comprobar respuesta")
                         }
                     }
-                    if(validated) {
-                        Card(colors=CardDefaults.cardColors(containerColor=if(correct) Mint else Orange)) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text(if(correct)"¡Correcto! +10 puntos" else "Casi. Esta es la solución:",color=Deep,fontSize=14.sp)
-                                Text(task.english,color=Deep,fontSize=13.sp)
-                                Text(task.spanish,color=Muted,fontSize=12.sp)
-                                Text("Explicación: "+task.explanation,color=Muted,fontSize=11.sp)
-                                Text("Regla: "+lesson.specificRule,color=Muted,fontSize=11.sp)
-                            }
+                    if(validated || (mode==StudyGame.MEMORY && reviewed)) {
+                        Button(onClick={
+                            if(round < SupplementaryPractice.COUNT-1) round++ else finished=true
+                        },modifier=Modifier.fillMaxWidth()) {
+                            Text(if(round==SupplementaryPractice.COUNT-1)"Finalizar serie"
+                                else "Siguiente ejercicio")
                         }
-                    }
-                    if(!validated) {
-                        Button(
-                            enabled=if(mode==StudyGame.ORDER) order.size==task.tokenOrder.size else selected.isNotBlank(),
-                            onClick={validated=true;tracker.record(lesson.id,task.skill,correct);if(correct){points+=10;streak++}else streak=0},
-                            modifier=Modifier.fillMaxWidth(),
-                            colors=ButtonDefaults.buttonColors(containerColor=Ocean)
-                        ) { Text("Comprobar respuesta") }
                     }
                 }
-                if(validated || mode==StudyGame.MEMORY) Button(
-                    onClick={
-                        recent.add(task.answer)
-                        if(recent.size>3) recent.removeAt(0)
-                        round++
-                    },
-                    modifier=Modifier.fillMaxWidth(),
-                    colors=ButtonDefaults.buttonColors(containerColor=Ocean)
-                ) { Text("Crear otra práctica ↻") }
             }
         }
+        Text("Las puntuaciones se basan en respuestas modelo; la variedad de distractores y los textos "
+            +"requieren revisión educativa externa.",color=Muted,fontSize=11.sp)
     }
 }
 
 @Composable
-private fun Reading(lesson: StudyLesson, dialogueBank: List<String>, titleBank: List<String>) {
-    var translations by remember(lesson.id) { mutableStateOf(false) }
-    var answered by remember(lesson.id) { mutableStateOf("") }
-    var titleChoice by remember(lesson.id) { mutableStateOf("") }
-    var reflection by rememberSaveable(lesson.id) { mutableStateOf("") }
-    val correct=lesson.dialogue[1].substringAfter(": ").trim()
-    val options=remember(lesson.id) {
-        (dialogueBank.filter { it!=correct }.distinct().shuffled().take(3)+correct).shuffled()
+private fun Reading(lesson: StudyLesson, levelLessons: List<StudyLesson>) {
+    val items=remember(lesson.id) { SupplementaryPractice.reading(lesson,levelLessons) }
+    var index by rememberSaveable(lesson.id) { mutableStateOf(0) }
+    var answers by rememberSaveable(lesson.id) {
+        mutableStateOf(List(SupplementaryPractice.COUNT) { "" })
     }
+    var checked by rememberSaveable(lesson.id) {
+        mutableStateOf(List(SupplementaryPractice.COUNT) { false })
+    }
+    val item=items[index]
+    val completed=checked.count { it }
+    val correct=items.indices.count { checked[it] && answers[it]==items[it].answer }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Comprensión lectora","Lee el texto y el diálogo")
-        Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(20.dp)) {
-            Column(Modifier.padding(17.dp),verticalArrangement=Arrangement.spacedBy(13.dp)) {
-                Text("LECTURA · "+lesson.level,color=Ocean,fontSize=11.sp)
-                Text(lesson.contextualText,color=Deep,fontSize=15.sp,lineHeight=24.sp)
-                if(lesson.level=="B2" || lesson.level=="C1" || lesson.level=="C2") {
-                    Text("Identifica la tesis, la evidencia, una limitación y una inferencia posible.",
-                        color=Muted,fontSize=12.sp)
-                }
+        Heading("Reading · 16 ejercicios","Comprensión y lectura bilingüe")
+        Card(colors=CardDefaults.cardColors(containerColor=Color.White),
+            shape=RoundedCornerShape(17.dp)) {
+            Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                Text("TEXTO DE LA UNIDAD · "+lesson.level,color=Ocean,fontSize=11.sp)
+                Text(lesson.contextualText,color=Deep,fontSize=14.sp,lineHeight=22.sp)
                 HorizontalDivider()
-                Text("DIÁLOGO",color=Ocean,fontSize=11.sp)
-                lesson.dialogue.forEach { line -> Text(line,color=Deep,fontSize=14.sp) }
-                OutlinedButton(onClick={translations=!translations}) {
-                    Text(if(translations)"Ocultar modelos" else "Mostrar modelos bilingües")
-                }
-                if(translations)lesson.examples.take(2).forEach {
-                    Text(it.english+" — "+it.spanish,color=Muted,fontSize=12.sp)
-                }
+                lesson.dialogue.forEach { Text(it,color=Deep,fontSize=13.sp) }
             }
         }
+        LinearProgressIndicator(progress={completed.toFloat()/SupplementaryPractice.COUNT},
+            modifier=Modifier.fillMaxWidth())
+        Text("Ejercicio "+(index+1)+" de 16 · Comprobados: "+completed+
+            " · Respuestas correctas: "+correct,color=Ocean,fontSize=12.sp)
         Card(colors=CardDefaults.cardColors(containerColor=Purple)) {
-            Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("¿Qué respondió la segunda persona?",color=Deep,fontSize=15.sp)
-                options.forEach { v ->
-                    OutlinedButton(onClick={answered=v},modifier=Modifier.fillMaxWidth()) {
-                        Text((if(answered==v)"● " else "○ ")+v,fontSize=12.sp)
+            Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                Text(item.prompt,color=Deep,fontSize=16.sp)
+                if(item.stimulus.isNotBlank())Text(item.stimulus,color=Deep,fontSize=14.sp,lineHeight=22.sp)
+                item.options.forEach { option ->
+                    OutlinedButton(onClick={
+                        answers=answers.toMutableList().also { it[index]=option }
+                    },modifier=Modifier.fillMaxWidth(),enabled=!checked[index]) {
+                        Text((if(answers[index]==option)"● " else "○ ")+option,fontSize=12.sp)
                     }
                 }
-                if(answered.isNotBlank()) Text(
-                    if(answered==correct)"Correcto: identificaste la respuesta explícita."
-                        else "Revisa el diálogo. La respuesta es: "+correct,
-                    color=Deep,fontSize=12.sp
-                )
-            }
-        }
-        Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
-            Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("Segunda comprobación de lectura",color=Deep,fontSize=15.sp)
-                Text(lesson.readingChecks[1].prompt,color=Muted,fontSize=12.sp)
-                val otherTitles=remember(lesson.id) {
-                    (titleBank.filter { it!=lesson.title }.shuffled().take(3)+lesson.title).shuffled()
+                if(checked[index]) {
+                    Text(if(answers[index]==item.answer)"✓ Correcto" else "Solución modelo: "+item.answer,
+                        color=Deep,fontSize=13.sp)
+                    Text(item.explanation,color=Muted,fontSize=12.sp)
+                } else Button(
+                    onClick={checked=checked.toMutableList().also { it[index]=true }},
+                    enabled=answers[index].isNotBlank(),modifier=Modifier.fillMaxWidth()) {
+                    Text("Comprobar")
                 }
-                otherTitles.forEach { title ->
-                    OutlinedButton(onClick={titleChoice=title},modifier=Modifier.fillMaxWidth()) {
-                        Text((if(titleChoice==title)"● " else "○ ")+title,fontSize=12.sp)
-                    }
-                }
-                if(titleChoice.isNotBlank()) Text(
-                    if(titleChoice==lesson.title)"Correcto: identificaste el tema central."
-                    else "Revisa el encabezado: "+lesson.title,
-                    color=Deep,fontSize=12.sp
-                )
             }
         }
-        Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
-            Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("Lectura crítica: reflexión libre",color=Deep,fontSize=15.sp)
-                Text(if(lesson.level=="A0"||lesson.level=="A1"||lesson.level=="A2")
-                    "¿Qué sucede en el diálogo? Responde con una oración."
-                    else "Resume la idea principal del texto y explica qué información falta para verificarla.",
-                    color=Muted,fontSize=12.sp)
-                OutlinedTextField(
-                    value=reflection,onValueChange={reflection=it.take(1000)},
-                    modifier=Modifier.fillMaxWidth(),
-                    label={Text("Mi interpretación")}
-                )
-                Text("Esta reflexión no se corrige automáticamente.",color=Muted,fontSize=11.sp)
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick={index--},enabled=index>0,modifier=Modifier.weight(1f)) {
+                Text("Anterior")
             }
+            Button(onClick={index++},enabled=index<SupplementaryPractice.COUNT-1,
+                modifier=Modifier.weight(1f)) { Text("Siguiente") }
         }
+        Text("Los dos primeros ejercicios comprueban el diálogo y el tema. Los restantes "
+            +"trabajan equivalencias bilingües de la unidad y del nivel.",
+            color=Muted,fontSize=11.sp)
     }
 }
 
 @Composable
-private fun Listening(lesson: StudyLesson, bank: List<StudyLine>, speak: (String,Float)->Unit, status: String) {
-    var index by remember(lesson.id) { mutableStateOf(0) }
+private fun Listening(
+    lesson: StudyLesson, levelLessons: List<StudyLesson>,
+    speak: (String,Float)->Unit, status: String
+) {
+    val items=remember(lesson.id) { SupplementaryPractice.listening(lesson,levelLessons) }
+    var index by rememberSaveable(lesson.id) { mutableStateOf(0) }
+    var answers by rememberSaveable(lesson.id) {
+        mutableStateOf(List(SupplementaryPractice.COUNT) { "" })
+    }
+    var checked by rememberSaveable(lesson.id) {
+        mutableStateOf(List(SupplementaryPractice.COUNT) { false })
+    }
     var reveal by remember(lesson.id,index) { mutableStateOf(false) }
-    var choice by remember(lesson.id,index) { mutableStateOf("") }
-    val line=lesson.examples[index%lesson.examples.size]
-    val other=bank.map { it.spanish }.filter { it!=line.spanish }.distinct().take(3)
-    val options=remember(lesson.id,index) { (other+line.spanish).shuffled() }
+    val item=items[index]
+    val done=checked.count { it }
+    val correct=items.indices.count { checked[it] && answers[it]==items[it].answer }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Listening · inglés americano","Escucha y comprende")
-        Card(colors=CardDefaults.cardColors(containerColor=Soft),shape=RoundedCornerShape(20.dp)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("🎧  Audio de práctica "+(index+1)+"/4",color=Deep,fontSize=17.sp)
-                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-                    Button(onClick={speak(line.english,1f)},colors=ButtonDefaults.buttonColors(containerColor=Ocean)) {
+        Heading("Listening · 16 ejercicios","Escucha e identifica el mensaje")
+        LinearProgressIndicator(progress={done.toFloat()/SupplementaryPractice.COUNT},
+            modifier=Modifier.fillMaxWidth())
+        Text("Ejercicio "+(index+1)+" de 16 · Comprobados: "+done+
+            " · Correctos: "+correct,color=Ocean,fontSize=12.sp)
+        Card(colors=CardDefaults.cardColors(containerColor=Soft)) {
+            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
+                Text(item.prompt,color=Deep,fontSize=16.sp)
+                Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                    Button(onClick={speak(item.audioText,1f)},modifier=Modifier.weight(1f)) {
                         Text("▶ Normal")
                     }
-                    OutlinedButton(onClick={speak(line.english,0.7f)}) { Text("▶ Lento") }
+                    OutlinedButton(onClick={speak(item.audioText,0.75f)},modifier=Modifier.weight(1f)) {
+                        Text("▶ Lento")
+                    }
                 }
-                OutlinedButton(onClick={speak(lesson.dialogue.joinToString(". "),1f)}) {
-                    Text("▶ Escuchar el diálogo")
+                Text("Voz sintética de Android: necesita motor de inglés instalado.",
+                    color=Muted,fontSize=11.sp)
+                if(status.isNotBlank())Text(status,color=Color(0xFFA4532A),fontSize=12.sp)
+                OutlinedButton(onClick={reveal=!reveal},modifier=Modifier.fillMaxWidth()) {
+                    Text(if(reveal)"Ocultar transcripción" else "Mostrar transcripción accesible")
                 }
-                Text("Voz sintética de Android. Requiere que el dispositivo tenga instalada una voz compatible.",color=Muted,fontSize=11.sp,textAlign=TextAlign.Center)
-                if(status.isNotBlank())Text(status,color=Color(0xFFA4532A),fontSize=11.sp)
-                if(reveal)Text(line.english,color=Deep,fontSize=15.sp)
-                OutlinedButton(onClick={reveal=!reveal}) { Text(if(reveal)"Ocultar transcripción" else "Ver transcripción") }
+                if(reveal) {
+                    Text(item.audioText,color=Deep,fontSize=14.sp)
+                    Text("Con la transcripción visible, esta actividad practica lectura, no escucha.",
+                        color=Muted,fontSize=11.sp)
+                }
             }
         }
-        Text("¿Qué escuchaste?",color=Deep,fontSize=16.sp)
-        options.forEach { opt ->
-            OutlinedButton(onClick={choice=opt},modifier=Modifier.fillMaxWidth()) {
-                Text((if(choice==opt)"● " else "○ ")+opt,fontSize=12.sp)
+        item.options.forEach { opt ->
+            OutlinedButton(onClick={
+                answers=answers.toMutableList().also { it[index]=opt }
+            },enabled=!checked[index],modifier=Modifier.fillMaxWidth()) {
+                Text((if(answers[index]==opt)"● " else "○ ")+opt,fontSize=12.sp)
             }
         }
-        if(choice.isNotBlank()) {
-            Text(if(choice==line.spanish)"¡Correcto! Identificaste el mensaje." else "Repite el audio. Solución: "+line.spanish,color=Deep,fontSize=12.sp)
+        if(checked[index]) {
+            Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(if(answers[index]==item.answer)"✓ Correcto"
+                        else "Respuesta de referencia: "+item.answer,color=Deep,fontSize=13.sp)
+                    Text(item.explanation,color=Muted,fontSize=12.sp)
+                }
+            }
+        } else Button(
+            onClick={checked=checked.toMutableList().also { it[index]=true }},
+            enabled=answers[index].isNotBlank(),modifier=Modifier.fillMaxWidth()) {
+            Text("Comprobar")
         }
-        Button(onClick={index=(index+1)%lesson.examples.size},modifier=Modifier.fillMaxWidth()) { Text("Otra escucha ↻") }
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick={index--},enabled=index>0,modifier=Modifier.weight(1f)) {
+                Text("Anterior")
+            }
+            Button(onClick={index++},enabled=index<SupplementaryPractice.COUNT-1,
+                modifier=Modifier.weight(1f)) { Text("Siguiente") }
+        }
     }
 }
 
 @Composable
 private fun Writing(lesson: StudyLesson) {
-    var response by rememberSaveable(lesson.id) { mutableStateOf("") }
-    var showModel by remember(lesson.id) { mutableStateOf(false) }
-    val words=response.trim().split(Regex("\\s+")).count { it.isNotBlank() && response.isNotBlank() }
+    val exercises=remember(lesson.id) { SupplementaryPractice.writing(lesson) }
+    var index by rememberSaveable(lesson.id) { mutableStateOf(0) }
+    var drafts by rememberSaveable(lesson.id) {
+        mutableStateOf(List(SupplementaryPractice.COUNT) { "" })
+    }
+    var showModel by remember(lesson.id,index) { mutableStateOf(false) }
+    val item=exercises[index]
+    val done=drafts.count { it.isNotBlank() }
+    val words=drafts[index].trim().split(Regex("\\s+"))
+        .count { it.isNotBlank() && drafts[index].isNotBlank() }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Producción escrita","Escribe con tus propias palabras")
+        Heading("Writing · 16 ejercicios","Escribe y conserva tus borradores")
+        LinearProgressIndicator(progress={done.toFloat()/SupplementaryPractice.COUNT},
+            modifier=Modifier.fillMaxWidth())
+        Text("Ejercicio "+(index+1)+" de 16 · Con borrador: "+done+
+            " · Palabras actuales: "+words,color=Ocean,fontSize=12.sp)
         Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
-            Column(Modifier.padding(17.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text(lesson.writing,color=Deep,fontSize=15.sp)
+            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                Text(item.prompt,color=Deep,fontSize=15.sp)
                 OutlinedTextField(
-                    value=response,onValueChange={response=it.take(3000)},
+                    value=drafts[index],
+                    onValueChange={ value ->
+                        drafts=drafts.toMutableList().also { it[index]=value.take(3000) }
+                    },
                     modifier=Modifier.fillMaxWidth().height(180.dp),
                     placeholder={Text("Escribe tu respuesta aquí...")},
                     label={Text("Mi redacción")}
                 )
-                Text(words.toString()+" palabras · borrador no enviado a ningún servidor",color=Muted,fontSize=11.sp)
-                Text("Rúbrica orientativa de "+lesson.level,color=Ocean,fontSize=14.sp)
+                Text("Borrador guardado localmente en esta sesión; no se transmite.",
+                    color=Muted,fontSize=11.sp)
+                Text("Rúbrica de autoevaluación",color=Ocean,fontSize=14.sp)
                 lesson.rubric.forEach { Text("□ "+it,color=Deep,fontSize=12.sp) }
-                Text("Lista de revisión personal",color=Ocean,fontSize=14.sp)
-                listOf(
-                    "¿La idea se entiende sin ayuda?",
-                    "¿Usaste vocabulario y estructuras del tema?",
-                    "¿Revisaste orden, concordancia y puntuación?",
-                    "¿Puedes explicar por qué elegiste esa forma?"
-                ).forEach { Text("□ "+it,color=Deep,fontSize=12.sp) }
-                OutlinedButton(onClick={showModel=!showModel}) { Text(if(showModel)"Ocultar ejemplo" else "Mostrar un modelo") }
-                if(showModel){
+                OutlinedButton(onClick={showModel=!showModel}) {
+                    Text(if(showModel)"Ocultar referencia" else "Mostrar referencia orientativa")
+                }
+                if(showModel) {
                     Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
-                        Column(Modifier.padding(11.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                            Text(lesson.examples.take(2).joinToString(" ") { it.english },color=Deep,fontSize=14.sp)
-                            Text("Este modelo no es la única respuesta correcta.",color=Muted,fontSize=11.sp)
+                        Column(Modifier.padding(11.dp)) {
+                            Text(item.reference,color=Deep,fontSize=13.sp)
+                            Text("Puede haber múltiples respuestas correctas. No se califica automáticamente.",
+                                color=Muted,fontSize=11.sp)
                         }
                     }
                 }
             }
         }
-        Text("Sin calificación automática de redacción: una corrección lingüística seria requiere rúbricas y evaluación adecuada.",color=Muted,fontSize=11.sp)
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick={index--},enabled=index>0,modifier=Modifier.weight(1f)) {
+                Text("Anterior")
+            }
+            Button(onClick={index++},enabled=index<SupplementaryPractice.COUNT-1,
+                modifier=Modifier.weight(1f)) { Text("Siguiente") }
+        }
+        Text("La corrección lingüística requiere evaluación con una rúbrica; "
+            +"el indicador de avance solo cuenta borradores no vacíos.",color=Muted,fontSize=11.sp)
     }
 }
