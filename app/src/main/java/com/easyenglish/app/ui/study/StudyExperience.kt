@@ -265,11 +265,11 @@ private fun Games(lesson: StudyLesson, levelLessons: List<StudyLesson>, tracker:
     val task=remember(lesson.id,mode,round) {
         SupplementaryPractice.game(lesson,levelLessons,mode,round)
     }
-    var selected by remember(task) { mutableStateOf("") }
-    var validated by remember(task) { mutableStateOf(false) }
-    var flip by remember(task) { mutableStateOf(false) }
-    var reviewed by remember(task) { mutableStateOf(false) }
-    var order by remember(task) { mutableStateOf(listOf<Int>()) }
+    var selected by remember(lesson.id,mode,round) { mutableStateOf("") }
+    var validated by remember(lesson.id,mode,round) { mutableStateOf(false) }
+    var flip by remember(lesson.id,mode,round) { mutableStateOf(false) }
+    var reviewed by remember(lesson.id,mode,round) { mutableStateOf(false) }
+    var order by remember(lesson.id,mode,round) { mutableStateOf(listOf<Int>()) }
     val correct=if(mode==StudyGame.ORDER) {
         order.map { task.tokenOrder[it] }.joinToString(" ")==task.answer
     } else selected==task.answer
