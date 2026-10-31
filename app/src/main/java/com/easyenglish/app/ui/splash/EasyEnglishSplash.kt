@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.easyenglish.app.R
+import com.easyenglish.app.data.ProfileStore
 import kotlin.math.abs
 import kotlin.math.sin
 
@@ -67,13 +69,15 @@ private val wordColors = listOf(
 
 @Composable
 fun EasyEnglishSplash(onFinished: () -> Unit) {
+    val context = LocalContext.current
+    val reduceMotion = remember { ProfileStore(context).reduceMotion() }
     val timeline = remember { Animatable(0f) }
     val latestOnFinished by rememberUpdatedState(onFinished)
 
     LaunchedEffect(Unit) {
         timeline.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = SPLASH_DURATION_MS, easing = LinearEasing)
+            animationSpec = tween(durationMillis = if (reduceMotion) 300 else SPLASH_DURATION_MS, easing = LinearEasing)
         )
         latestOnFinished()
     }
