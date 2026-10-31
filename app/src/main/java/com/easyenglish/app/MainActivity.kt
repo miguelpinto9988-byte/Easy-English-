@@ -730,7 +730,7 @@ private fun UnitsPage(level: String, onBack: () -> Unit, onUnit: (Int) -> Unit) 
         items(filtered) { (index,title) ->
             FeatureCard(
                 (index+1).toString().padStart(2,'0')+"  "+title,
-                "8 sesiones · 64 actividades, teoría y juegos",
+                "8 sesiones · 128 ejercicios, teoría y juegos",
                 R.drawable.nav_book
             ) { onUnit(index) }
         }
