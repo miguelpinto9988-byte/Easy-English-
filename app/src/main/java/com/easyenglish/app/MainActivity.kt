@@ -3,6 +3,8 @@ package com.easyenglish.app
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +21,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -90,6 +96,10 @@ private enum class Page { PROFILE, PLACEMENT, REPORT, HOME, LEVELS, UNITS, LESSO
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(android.graphics.Color.WHITE, android.graphics.Color.WHITE),
+            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.WHITE, android.graphics.Color.WHITE)
+        )
         setContent {
             EasyEnglishTheme {
                 var splashDone by rememberSaveable { mutableStateOf(false) }
@@ -142,35 +152,56 @@ private fun EasyEnglishApplication() {
     }
     val menu: @Composable () -> Unit = {
         ModalDrawerSheet(
-            modifier = Modifier.width(304.dp),
-            drawerContainerColor = Color.White
+            modifier = Modifier
+                .width(322.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            drawerContainerColor = Color(0xFFF9FBFF)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Brush.horizontalGradient(listOf(Navy, Blue)))
-                    .padding(20.dp)
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 18.dp)
             ) {
-                Avatar(profile.photoPath, 62)
-                Spacer(Modifier.height(8.dp))
-                Text(profile.name.ifBlank { "Mi perfil" }, color = Color.White, fontSize = 20.sp)
-                Text("Easy English · Ruta " + profile.level, color = Color(0xFFDCEBFF), fontSize = 12.sp)
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth()
+                            .background(Brush.horizontalGradient(listOf(Color(0xFF103B99), Color(0xFF1870D3), Color(0xFF49C8E9))))
+                            .padding(start = 20.dp, end = 18.dp, top = 15.dp, bottom = 21.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(13.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Avatar(profile.photoPath, 66)
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(profile.name.ifBlank { "Mi perfil" }, color = Color.White, fontSize = 19.sp)
+                                    Text("Ruta " + profile.level + " · desde cero", color = Color(0xFFE2F1FF), fontSize = 11.sp)
+                                }
+                                TextButton(onClick = { scope.launch { drawerState.close() } }) {
+                                    Text("×", color = Color.White, fontSize = 27.sp)
+                                }
+                            }
+                            Text("🦊 Tu espacio en Easy English", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                }
+                item { DrawerSection("APRENDIZAJE") }
+                item { DrawerOption(R.drawable.nav_home, "Inicio", "Panel principal", page == Page.HOME) { navigate(Page.HOME) } }
+                item { DrawerOption(R.drawable.nav_levels, "Niveles y unidades", "A0 a C2 · 156 unidades", page == Page.LEVELS || page == Page.UNITS) { navigate(Page.LEVELS) } }
+                item { DrawerOption(R.drawable.nav_book, "Mi clase", "Volver a la lección", page == Page.LESSON) { navigate(Page.LESSON) } }
+                item { DrawerOption(R.drawable.nav_progress, "Mi progreso", "Resumen de tu ruta", page == Page.PROGRESS) { navigate(Page.PROGRESS) } }
+                item { HorizontalDivider(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), color = Color(0xFFE2EAFA)) }
+                item { DrawerSection("PERFIL Y EVALUACIÓN") }
+                item { DrawerOption(R.drawable.nav_profile, "Editar perfil", "Foto, nombre y preferencias", page == Page.PROFILE) { navigate(Page.PROFILE) } }
+                item { DrawerOption(R.drawable.nav_exam, "Prueba de clasificación", "Evaluar habilidades · demostración", page == Page.PLACEMENT) { navigate(Page.PLACEMENT) } }
+                item { DrawerOption(R.drawable.nav_settings, "Preferencias", "Accesibilidad y sonido", page == Page.SETTINGS) { navigate(Page.SETTINGS) } }
+                item { DrawerOption(R.drawable.nav_download, "Descargar contenidos", "Más temas y audios", page == Page.DOWNLOADS) { navigate(Page.DOWNLOADS) } }
+                item {
+                    Text(
+                        "🔒 Tu perfil se almacena en este dispositivo. Las pruebas actuales son demostrativas.",
+                        modifier = Modifier.padding(horizontal = 22.dp, vertical = 17.dp),
+                        color = Gray, fontSize = 11.sp
+                    )
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            DrawerOption(R.drawable.nav_home, "Inicio", page == Page.HOME) { navigate(Page.HOME) }
-            DrawerOption(R.drawable.nav_levels, "Niveles y unidades", page == Page.LEVELS || page == Page.UNITS) { navigate(Page.LEVELS) }
-            DrawerOption(R.drawable.nav_book, "Mi clase", page == Page.LESSON) { navigate(Page.LESSON) }
-            DrawerOption(R.drawable.nav_progress, "Mi progreso", page == Page.PROGRESS) { navigate(Page.PROGRESS) }
-            HorizontalDivider(Modifier.padding(vertical = 7.dp), color = Color(0xFFE5ECFA))
-            DrawerOption(R.drawable.nav_profile, "Editar perfil", page == Page.PROFILE) { navigate(Page.PROFILE) }
-            DrawerOption(R.drawable.nav_exam, "Prueba de clasificación", page == Page.PLACEMENT) { navigate(Page.PLACEMENT) }
-            DrawerOption(R.drawable.nav_settings, "Preferencias", page == Page.SETTINGS) { navigate(Page.SETTINGS) }
-            DrawerOption(R.drawable.nav_download, "Descargar contenidos", page == Page.DOWNLOADS) { navigate(Page.DOWNLOADS) }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Los datos de tu perfil se guardan en este dispositivo.",
-                color = Gray, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 20.dp)
-            )
         }
     }
     ModalNavigationDrawer(
@@ -185,17 +216,24 @@ private fun EasyEnglishApplication() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White)
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                        .statusBarsPadding()
+                        .padding(horizontal = 17.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Image(painterResource(R.drawable.fox_mascot), null, Modifier.size(34.dp))
-                        Text("Easy English", color = Navy, fontSize = 21.sp)
+                        Box(
+                            Modifier.size(40.dp).clip(RoundedCornerShape(13.dp))
+                                .background(Color(0xFFE4F2FF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(painterResource(R.drawable.fox_mascot), null, Modifier.size(40.dp))
+                        }
+                        Text("Easy English", color = Color(0xFF1554B5), fontSize = 20.sp)
                     }
                     if (profile.saved) {
                         Box(Modifier.clickable { scope.launch { drawerState.open() } }) {
-                            Avatar(profile.photoPath, 42)
+                            Avatar(profile.photoPath, 46)
                         }
                     }
                 }
@@ -243,20 +281,39 @@ private fun EasyEnglishApplication() {
 }
 
 @Composable
-private fun DrawerOption(icon: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+private fun DrawerSection(name: String) {
+    Text(
+        name,
+        modifier = Modifier.padding(start = 23.dp, top = 19.dp, bottom = 9.dp),
+        color = Color(0xFF7A8CAD),
+        fontSize = 11.sp,
+        letterSpacing = 1.sp
+    )
+}
+
+@Composable
+private fun DrawerOption(icon: Int, label: String, detail: String, selected: Boolean, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 3.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(if (selected) Pale else Color.Transparent)
+        modifier = Modifier.fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 3.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) Color(0xFFE8F1FF) else Color.Transparent)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 11.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Image(painterResource(icon), null, Modifier.size(25.dp))
-        Text(label, fontSize = 14.sp, color = Navy, maxLines = 1)
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            contentScale = ContentScale.Fit
+        )
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, fontSize = 13.sp, color = if (selected) Color(0xFF1258C0) else Color(0xFF203D72))
+            Text(detail, fontSize = 10.sp, color = Color(0xFF7084A5), maxLines = 1)
+        }
+        Text(if (selected) "●" else "›", fontSize = if (selected) 13.sp else 21.sp, color = Color(0xFF7594C5))
     }
 }
 
