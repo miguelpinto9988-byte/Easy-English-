@@ -68,6 +68,29 @@ class SupplementaryPracticeTest {
         assertTrue(prompts.all { it.reference.isNotBlank() })
     }
 
+    @Test fun newOriginalPhraseBankIsDistinctAndBilingual() {
+        val expected=mapOf("A0" to 24,"A1" to 8,"A2" to 8,
+            "B1" to 8,"B2" to 8,"C1" to 8,"C2" to 8)
+        for((level,count) in expected) {
+            val lines=OriginalPracticeLines.forLevel(level)
+            assertEquals(count,lines.size)
+            assertEquals(count,lines.map { it.english }.distinct().size)
+            assertEquals(count,lines.map { it.spanish }.distinct().size)
+            assertTrue(lines.all { it.english.isNotBlank() && it.spanish.isNotBlank() })
+        }
+    }
+
+    @Test fun sourceSentencesDoNotRepeatWithinVocabularyAndOrderingSeries() {
+        val lessons=levels()
+        for(mode in listOf(StudyGame.MEANING,StudyGame.TRANSLATION,
+            StudyGame.ORDER,StudyGame.MEMORY)) {
+            val series=(0 until 16).map {
+                SupplementaryPractice.game(lessons.first(),lessons,mode,it)
+            }
+            assertEquals(16,series.map { it.english }.distinct().size)
+        }
+    }
+
     @Test fun everyGameModeProvidesSixteenUsableRounds() {
         val lessons=levels()
         for (mode in StudyGame.entries) {
