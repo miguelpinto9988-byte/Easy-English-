@@ -1,34 +1,33 @@
-# Easy English
+# Easy English — Android
 
-Aplicación Android nativa con **Kotlin** y **Jetpack Compose**. Este repositorio contiene una base ejecutable; las lecciones, ejercicios y demás funcionalidades se incorporarán cuando se definan sus requisitos.
+App nativa Android con Kotlin y Jetpack Compose. Requiere **Android 10 (API 29)** o posterior.
 
-## Compatibilidad y herramientas
+## Pantalla de inicio (V4)
 
-- Android mínimo: **Android 10 (API 29)**
-- SDK de compilación: **Android 17 / API 37**
-- Kotlin y Compose Compiler: **2.4.21**
-- Android Gradle Plugin: **9.3.1**
-- Gradle: **9.5.0**
-- Compose BOM: **2026.09.00**
-- Java: **JDK 17**
-- UI: **Material 3**
+La app muestra el zorrito con su libro en posición fija; **se eliminó por completo la animación del libro abriéndose**.
 
-## Cómo ejecutar
+- Mascota de zorro con gafas azules y bufanda, integrada como PNG optimizado.
+- Parpadeos y leve movimiento de la mascota.
+- Fondo azul con destellos animados.
+- 15 palabras de vocabulario que ascienden, una tras otra, desde la zona del libro.
+- Texto `Easy English` que se escribe progresivamente.
+- Barra de progreso animada.
 
-1. Abre el proyecto con Android Studio compatible con AGP 9.3.1, SDK 37 y JDK 17.
-2. Instala Gradle 9.5.0 (o usa el flujo de GitHub Actions).
-3. Ejecuta `gradle :app:assembleDebug`.
-4. El APK de prueba se genera en `app/build/outputs/apk/debug/app-debug.apk`.
+La animación dura aproximadamente 4,4 segundos y se ejecuta cuando se inicia una actividad nueva. **La barra representa la duración de esta presentación**, no el avance real de una descarga ni de una carga de red; todavía no hay tareas de inicialización para medir. Una futura integración podrá sincronizarla con tareas reales y reducir el tiempo de espera.
 
-## Compilar con GitHub Actions
+## Compilación
 
-En la pestaña **Actions**, ejecuta el flujo **Generar APK de prueba**, o publica cambios en `main`. Después de una ejecución exitosa, descarga el artefacto `Easy-English-debug-APK` en la página de la ejecución.
+Requisitos: Android SDK 37, Java 17, Gradle 9.5.0, Android Gradle Plugin 9.3.1 y Kotlin 2.4.21.
 
-La APK de depuración utiliza una clave de pruebas y **no** es una versión de producción. Para publicar la app se requerirán firma de lanzamiento, pruebas y definición del producto.
+Con Gradle instalado: `gradle :app:assembleDebug`.
+
+También puedes usar el flujo de [GitHub Actions](../../actions): **Generar APK de prueba**. Una vez completado correctamente, descarga el artefacto `Easy-English-debug-APK`.
+
+El APK de depuración no está firmado con credenciales de publicación; debe usarse solo para pruebas. La compilación y las pruebas en dispositivos Android 10+ todavía necesitan verificarse.
 
 ## Estructura
 
-- `app/src/main/java/`: código Kotlin y pantallas Compose.
-- `app/src/main/res/`: recursos Android (XML).
-- `app/build.gradle.kts`: configuración Android.
-- `.github/workflows/`: automatización de compilaciones (YAML).
+- `app/src/main/java/com/easyenglish/app/ui/splash/EasyEnglishSplash.kt`: secuencia en Jetpack Compose.
+- `app/src/main/res/drawable-nodpi/fox_mascot.png`: recurso de la mascota.
+- `app/src/main/java/com/easyenglish/app/MainActivity.kt`: transición a la pantalla inicial.
+- `.github/workflows/android-apk.yml`: compilación automática de APK de prueba.
