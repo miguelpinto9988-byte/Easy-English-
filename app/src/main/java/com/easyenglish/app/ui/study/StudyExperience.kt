@@ -147,7 +147,7 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             }
             when(tab){
                 "Ruta intensiva" -> item { IntensiveLearning(lesson,speak,audioStatus) }
-                "Presentación" -> item { Presentation(lesson) }
+                "Presentación" -> item { TheoryPresentation(lesson,speak) }
                 "Prácticas" -> item { Games(lesson,levelLessons,progressStore) }
                 "Lectura" -> item { Reading(lesson,levelLessons) }
                 "Escucha" -> item { Listening(lesson,levelLessons,speak,audioStatus) }
