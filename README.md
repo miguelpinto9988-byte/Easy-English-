@@ -1,4 +1,4 @@
-# Easy English Android v0.9.0 — 16 ejercicios y nueva iconografía PNG
+# Easy English Android v0.10.0 — Teoría visual PNG y aprendizaje interactivo
 
 Aplicación Android 10+ en Kotlin y Jetpack Compose. Mantiene navegación V3 desde el avatar, iconos PNG HD, separación de 6 dp y letras en negrita.
 
@@ -20,6 +20,14 @@ La biblioteca curricular anterior contenía aproximadamente **1.209.022 caracter
 - Las ocho sesiones aparecen en la pestaña Ruta intensiva. El avance contabiliza los **128 ejercicios** de cada unidad y no da por completados los que el alumno salta sin comprobar o contrastar. El progreso se guarda solo en el dispositivo.
 - La biblioteca se carga por nivel desde los siete paquetes JSON. El banco de juegos aleatorios anterior se conserva.
 - Los contenidos instalados funcionan sin internet. La reproducción de voz depende de un motor TTS con voz adecuada instalada en Android.
+
+## Presentaciones visuales PNG v0.10.0
+
+- En la pestaña **Presentación** se generan **ocho infografías PNG por unidad** a partir de sus datos curriculares (156 × 8 = 1.248 posibles), sin ocupar espacio de instalación con miles de archivos repetidos.
+- Las diapositivas incluyen regla, explicaciones, ejemplos bilingües, diálogo, errores comunes, lectura y consignas; se muestran mediante un visor con anterior/siguiente, traducciones opcionales y reproducción de audio de ejemplo.
+- Un pequeño mosaico de cuatro fotografías de contexto complementa las páginas de ejemplos y diálogo. Las imágenes son **ilustrativas y compartidas entre unidades**, no un catálogo fotográfico particular por tema.
+- Los PNG se construyen localmente, quedan en la caché del teléfono y pueden regenerarse sin conexión. El logotipo original del zorrito con el libro **permanece intacto**.
+- Ver `docs/PRESENTACIONES_PNG_V010.md` y `scripts/validate_theory_slide_content.py` para detalles, límites y pruebas.
 
 ## Rediseño gráfico PNG v0.9.0
 
