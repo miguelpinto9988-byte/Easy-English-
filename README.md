@@ -1,4 +1,4 @@
-# Easy English Android v0.10.0 — Teoría visual PNG y aprendizaje interactivo
+# Easy English Android v0.11.0 — Teoría completa con 16 diapositivas PNG por unidad
 
 Aplicación Android 10+ en Kotlin y Jetpack Compose. Mantiene navegación V3 desde el avatar, iconos PNG HD, separación de 6 dp y letras en negrita.
 
@@ -20,6 +20,14 @@ La biblioteca curricular anterior contenía aproximadamente **1.209.022 caracter
 - Las ocho sesiones aparecen en la pestaña Ruta intensiva. El avance contabiliza los **128 ejercicios** de cada unidad y no da por completados los que el alumno salta sin comprobar o contrastar. El progreso se guarda solo en el dispositivo.
 - La biblioteca se carga por nivel desde los siete paquetes JSON. El banco de juegos aleatorios anterior se conserva.
 - Los contenidos instalados funcionan sin internet. La reproducción de voz depende de un motor TTS con voz adecuada instalada en Android.
+
+## Presentaciones A0–C2: 16 diapositivas PNG por unidad (v0.11.0)
+
+- Se han definido **16 páginas infográficas diferenciadas para cada una de las 156 unidades**: 12 de A0 y 24 por nivel de A1 a C2. En total, **2.496 diapositivas PNG generables sin conexión**.
+- El contenido se deriva del tema concreto, objetivos, reglas, cuatro pares de ejemplos en inglés y español, diálogo, errores, lectura, preguntas, escritura, oralidad y un reto con solución.
+- La pestaña Presentación permite saltar entre las 16 páginas, leer todos los textos sin recortes, activar traducciones, escuchar modelos y **preparar las 16 imágenes PNG de la unidad en la caché del dispositivo**. No es necesario descargar grandes archivos por internet.
+- Cada imagen sigue el diseño multicolor de 900 × 1480 píxeles, con ilustraciones PNG y fotos contextuales reutilizables en ejemplos y diálogo. Las fotos todavía no son específicas de cada unidad y la corrección lingüística requiere evaluación docente.
+- Se valida que las **2.496 páginas tienen datos de origen** con `scripts/validate_theory_slide_content.py`, además de pruebas JUnit del modelo de 16 páginas.
 
 ## Presentaciones visuales PNG v0.10.0
 
