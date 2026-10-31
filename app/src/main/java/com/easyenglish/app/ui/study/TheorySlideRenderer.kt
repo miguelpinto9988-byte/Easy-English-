@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color as GColor
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
@@ -108,6 +109,23 @@ object TheorySlideRenderer {
             )
             atlas.recycle()
         }
+        fun photoScenes(y: Int) {
+            val opt=BitmapFactory.Options().apply { inScaled=false }
+            val sheet=BitmapFactory.decodeResource(context.resources,
+                R.drawable.ee_theory_photo_sheet,opt) ?: return
+            repeat(4) { i ->
+                val x=80+i*187
+                val rect=RectF(x.toFloat(),y.toFloat(),x+165f,y+118f)
+                val path=Path().apply { addRoundRect(rect,19f,19f,Path.Direction.CW) }
+                panel(x-4f,y-4f,173f,126f,21f,WHITE)
+                c.save()
+                c.clipPath(path)
+                c.drawBitmap(sheet,Rect((i%2)*64,(i/2)*64,(i%2+1)*64,(i/2+1)*64),
+                    rect,brush)
+                c.restore()
+            }
+            sheet.recycle()
+        }
         fun heading(s: String,y: Int,iconId: Int) {
             icon(iconId,74,y-15,74)
             label(s,155,y,632,34f,NAVY,true,90)
@@ -161,8 +179,9 @@ object TheorySlideRenderer {
             3 -> {
                 heading("Mira y compara",378,2)
                 lesson.examples.take(4).forEachIndexed { i,pair ->
-                    example(494+i*181,pair.english,pair.spanish,i%2==1)
+                    example(483+i*174,pair.english,pair.spanish,i%2==1)
                 }
+                photoScenes(1213)
             }
             4 -> {
                 heading("Un diálogo realista",378,25)
@@ -172,8 +191,9 @@ object TheorySlideRenderer {
                 panel(70f,819f,760f,281f,26f,MINT)
                 icon(25,93,844,73)
                 label(lesson.dialogue[1],184,854,600,34f,INK,true,202)
-                label("Localiza la pregunta, la respuesta y su intención.",
-                    94,1187,715,30f,GREY,false,105)
+                label("Localiza la pregunta y la respuesta.",
+                    94,1142,715,29f,GREY,false,55)
+                photoScenes(1201)
             }
             5 -> {
                 heading("Evita este error",378,15)
