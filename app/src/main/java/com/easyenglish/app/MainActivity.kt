@@ -80,6 +80,7 @@ import com.easyenglish.app.data.LevelCatalog
 import com.easyenglish.app.data.ProfileStore
 import com.easyenglish.app.data.UserProfile
 import com.easyenglish.app.ui.splash.EasyEnglishSplash
+import com.easyenglish.app.ui.study.StudyExperience
 import com.easyenglish.app.ui.theme.EasyEnglishTheme
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -265,7 +266,7 @@ private fun EasyEnglishApplication() {
                     Page.UNITS -> UnitsPage(level = level, onBack = { navigate(Page.LEVELS) }, onUnit = {
                         unitNumber = it; navigate(Page.LESSON)
                     })
-                    Page.LESSON -> LessonPage(level = level, unit = unitNumber, onBack = { navigate(Page.UNITS) })
+                    Page.LESSON -> StudyExperience(level = level, unit = unitNumber, onBack = { navigate(Page.UNITS) })
                     Page.PROGRESS -> ProgressPage(profile, onLevels = { navigate(Page.LEVELS) })
                     Page.SETTINGS -> SettingsPage(
                         reduceMotion = reduceMotion, enableAudio = enableAudio,
@@ -598,7 +599,7 @@ private fun HomePage(profile: UserProfile, onLevels: () -> Unit, onClass: () -> 
             }
         }
         item { Text("Tu siguiente lección", fontSize = 19.sp, color = Navy) }
-        item { FeatureCard("Verbo to be · A1", "Clase interactiva de demostración", R.drawable.nav_book, onClick = onClass) }
+        item { FeatureCard("Verbo to be · A1", "Lección con teoría y juegos", R.drawable.nav_book, onClick = onClass) }
         item { Text("Explora tu aprendizaje", fontSize = 19.sp, color = Navy) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -623,7 +624,7 @@ private fun HomePage(profile: UserProfile, onLevels: () -> Unit, onClass: () -> 
                 }
             }
         }
-        item { Text("Las 156 unidades conforman el plan curricular. Las lecciones se desarrollarán progresivamente.", color = Gray, fontSize = 11.sp) }
+        item { Text("156 fichas iniciales con teoría, ejemplos y práctica. Los contenidos avanzados se ampliarán y revisarán.", color = Gray, fontSize = 11.sp) }
     }
 }
 
@@ -703,7 +704,7 @@ private fun UnitsPage(level: String, onBack: () -> Unit, onUnit: (Int) -> Unit) 
         item { ScreenTitle(level + " · " + lvl.name, lvl.units.size.toString() + " unidades organizadas por tema") }
         item { TextButton(onClick = onBack) { Text("‹ Volver a niveles") } }
         itemsIndexed(lvl.units) { i, title ->
-            FeatureCard((i + 1).toString().padStart(2, '0') + "  " + title, if (level == "A1" && i == 2) "Lección de demostración disponible" else "Unidad del plan curricular · contenido en desarrollo", R.drawable.nav_book) {
+            FeatureCard((i + 1).toString().padStart(2, '0') + "  " + title, if (level == "A1" && i == 2) "Teoría, ejemplos, lectura, audio y juegos" else "Ficha interactiva disponible · edición inicial", R.drawable.nav_book) {
                 onUnit(i)
             }
         }
