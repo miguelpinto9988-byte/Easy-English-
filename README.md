@@ -45,3 +45,5 @@ Java 17, Gradle 9.5.0, Kotlin 2.4.21, Android Gradle Plugin 9.3.1, SDK 37 y Comp
 2. Añadir audio grabado con permisos claros de uso y recursos accesibles.
 3. Revisar las 156 fichas con docentes y validar rúbricas de Writing y Speaking.
 4. Construir pruebas adaptativas por destreza, almacenamiento seguro del progreso y ajuste curricular según desempeño.
+
+Estado de verificación: la compilación automática prueba la integración del estudio interactivo en Android.
