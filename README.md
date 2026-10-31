@@ -1,36 +1,47 @@
-# Easy English — Android v0.3.0
+# Easy English — Biblioteca de aprendizaje v0.4.0
 
-App Android nativa con Kotlin y Jetpack Compose. Mínimo: **Android 10 (API 29)**.
+Aplicación Android nativa en Kotlin + Jetpack Compose, compatible desde Android 10 (API 29). Mantiene el diseño V3: iconos PNG coloridos, menú lateral desde el avatar, negrita global y separación de 6 dp.
 
-## Pantallas
+## Contenido de la primera edición interactiva
 
-- Splash con zorrito y libro abierto (sin animación de abrir el libro).
-- Creación y edición de perfil local, foto convertida a PNG.
-- Menú lateral único, abierto desde avatar. Inicio, Niveles, Mi clase, Progreso, Editar perfil, Prueba, Preferencias y Descargas.
-- Iconos PNG con separación de **6 dp** hasta la etiqueta.
-- Material 3 con tipografía **siempre en negrita**.
-- Estructura A0 a C2 con 156 **títulos de unidades**, todavía sin el contenido completo de las 156 lecciones.
-- Teoría interactiva de ejemplo: verbo *to be*.
-- Examen de muestra (no validado, no certifica ni asigna niveles MCER; Writing y Speaking no se califican).
+- 156 fichas curriculares: A0 (12) + A1–C2 (24 cada uno).
+- 39 bloques de explicación gramatical, léxica y discursiva.
+- Cada ficha muestra objetivo, regla, precaución, cuatro ejemplos bilingües, una actividad de comprensión lectora, consigna de escritura y práctica oral.
+- Presentaciones interactivas de cuatro pasos (descubrimiento, regla, modelos y errores).
+- Juegos de comprensión, traducción, orden de palabras y tarjetas de repaso.
+- Generador local de preguntas a partir del corpus de frases; selección y orden aleatorios, sin almacenar preguntas preconstruidas ni enviar respuestas a internet.
+- Listening mediante el motor Text-to-Speech disponible en el dispositivo, solicitando voz estadounidense. Puede requerir instalación previa de voz; no hay audios humanos nuevos incluidos.
+- Escritura con guía de autoevaluación. **No se califica automáticamente** una producción libre.
+- La navegación permite entrar a una ficha desde cualquiera de las 156 unidades.
 
-## Descargas y privacidad
+El archivo `app/src/main/assets/lessons-v1.json` incluye el contenido inicial. Los 156 módulos son **fichas breves**, no cursos completos de varias horas, ni certificaciones oficiales. La explicación y los ejemplos pueden repetirse entre unidades del mismo bloque temático. Debe hacerse una revisión profesional de exactitud, secuenciación, naturalidad del español y adecuación de nivel, antes de presentar el currículo como validado.
 
-La aplicación puede utilizarse sin internet con lo que tiene instalado. Solo consulta el catálogo al seleccionar **Preferencias → Descargar contenidos → Buscar**. El catálogo oficial se publica en **content/manifest.json** de este repositorio. Descargas en HTTPS desde la ruta permitida de GitHub, con verificación SHA-256 y máximo de 8 MB por paquete; admite lecciones JSON y audios MP3.
+## Prácticas y límites
 
-Los perfiles se guardan de forma privada en el dispositivo; el módulo de descargas **no envía nombre, fotografía ni respuestas a un servidor**. La aplicación no solicita almacenamiento externo ni acceso permanente a la galería.
+El generador crea nuevas combinaciones en memoria usando el banco incluido: tiene variedad combinatoria, **no una cantidad literalmente infinita de conocimientos nuevos**. Los distractores para tareas de selección provienen de frases del mismo nivel. La opción de ordenar usa un orden textual de referencia; algunas variaciones lingüísticas válidas podrían no reconocerse. La puntuación por práctica solo sirve como retroalimentación de la sesión.
+
+## Conexión y descargas
+
+Los temas instalados funcionan sin internet. El área Preferencias → Descargar contenidos consulta un catálogo HTTPS en el repositorio solo cuando el estudiante lo solicita. Los archivos se guardan en almacenamiento privado, con verificación SHA-256. No se envían fotografías, nombres ni producciones del estudiante.
+
+## Fuentes de consulta
+
+Los textos de las lecciones son originales. Su diseño se informa en:
+- Consejo de Europa — MCER y descriptores: https://www.coe.int/en/web/common-european-framework-reference-languages/cefr-descriptors
+- American English (Departamento de Estado de EE. UU.) — materiales: https://americanenglish.state.gov/materials-teaching-english
+- ACTFL Proficiency Guidelines 2024: https://www.actfl.org/proficiency-guidelines-overview
+- British Council — referencia de enseñanza gramatical: https://learnenglish.britishcouncil.org/free-resources/grammar
+- American English — ideas de juegos: https://americanenglish.state.gov/resources/activate-games-learning-american-english
+
+No se han copiado textos extensos, ejercicios, audios ni imágenes de esos sitios. La incorporación de recursos externos queda condicionada a sus licencias y a revisión editorial.
 
 ## Compilación
 
-Java 17, Gradle 9.5.0, Android Gradle Plugin 9.3.1, Kotlin 2.4.21, SDK 37 y Compose BOM 2026.09.00.
+Java 17, Gradle 9.5.0, Kotlin 2.4.21, Android Gradle Plugin 9.3.1, SDK 37 y Compose BOM 2026.09.00. En GitHub Actions: **Generar APK de prueba**.
 
-Usar Android Studio o ejecutar: gradle :app:assembleDebug
+## Próximas mejoras recomendadas
 
-El flujo de GitHub Actions **Generar APK de prueba** crea el artefacto descargable tras una compilación exitosa. La APK debug no es para publicar en tiendas.
-
-## Próximos pasos
-
-Realizar pruebas en Android 10+, desarrollar las 156 unidades, crear exámenes reales por destrezas y validar los instrumentos de clasificación. La prueba actual es **solo una demostración de interfaz**.
-
-## Diseño V3
-
-Navegación desde avatar, panel lateral con descripciones, tarjetas de niveles multicolor, 15 iconos PNG de 256×256 y margen de seguridad para las barras nativas de estado y navegación de Android. Separación horizontal de icono y texto: 6 dp.
+1. Ampliar cada ficha a lecciones extensas y distintas, con situaciones, diálogos, lecturas y tareas por nivel.
+2. Añadir audio grabado con permisos claros de uso y recursos accesibles.
+3. Revisar las 156 fichas con docentes y validar rúbricas de Writing y Speaking.
+4. Construir pruebas adaptativas por destreza, almacenamiento seguro del progreso y ajuste curricular según desempeño.
