@@ -58,6 +58,8 @@ import com.easyenglish.app.data.StudyLibrary
 import com.easyenglish.app.data.StudyLine
 import com.easyenglish.app.data.SupplementaryPractice
 import com.easyenglish.app.data.PracticeProgressStore
+import com.easyenglish.app.ui.icons.Art
+import com.easyenglish.app.ui.icons.EasyIcon
 import java.util.Locale
 
 private val Ocean=Color(0xFF205ECB)
@@ -104,7 +106,10 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
         verticalArrangement=Arrangement.spacedBy(13.dp)
     ) {
         item {
-            TextButton(onClick=onBack) { Text("‹ Regresar a las unidades",color=Ocean) }
+            TextButton(onClick=onBack) {
+                EasyIcon(Art.Back,Modifier.size(23.dp))
+                Text("Regresar a las unidades",color=Ocean)
+            }
         }
         if(lesson==null){
             item { Text("Esta unidad todavía no está disponible.",color=Deep) }
@@ -122,7 +127,21 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             item {
                 Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                     listOf("Ruta intensiva","Presentación","Prácticas","Lectura","Escucha","Escritura").forEach { name ->
-                        FilterChip(selected=tab==name,onClick={tab=name},label={Text(name,fontSize=12.sp)})
+                        val art=when(name) {
+                            "Ruta intensiva"->Art.Intensive
+                            "Presentación"->Art.English
+                            "Prácticas"->Art.Games
+                            "Lectura"->Art.Reading
+                            "Escucha"->Art.Listening
+                            else->Art.Writing
+                        }
+                        FilterChip(selected=tab==name,onClick={tab=name},label={
+                            Row(verticalAlignment=Alignment.CenterVertically,
+                                horizontalArrangement=Arrangement.spacedBy(4.dp)) {
+                                EasyIcon(art,Modifier.size(25.dp))
+                                Text(name,fontSize=12.sp)
+                            }
+                        })
                     }
                 }
             }
@@ -137,7 +156,10 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             item {
                 Card(colors=CardDefaults.cardColors(containerColor=Soft),shape=RoundedCornerShape(15.dp)) {
                     Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                        Text("Aprender con criterio",color=Deep,fontSize=14.sp)
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            EasyIcon(Art.Help,Modifier.size(28.dp))
+                            Text("Aprender con criterio",color=Deep,fontSize=14.sp)
+                        }
                         Text("Estas fichas son originales y están en revisión pedagógica. Las actividades objetivas dan corrección automática; escritura y pronunciación requieren revisión humana para una evaluación real.",color=Muted,fontSize=11.sp)
                     }
                 }
@@ -155,6 +177,15 @@ private fun Heading(label: String, text: String) {
 }
 
 @Composable
+private fun AreaHeading(art: Art, label: String, subtitle: String) {
+    Row(verticalAlignment=Alignment.CenterVertically,
+        horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+        EasyIcon(art,Modifier.size(49.dp))
+        Heading(label,subtitle)
+    }
+}
+
+@Composable
 private fun Presentation(lesson: StudyLesson) {
     var slide by remember(lesson.id) { mutableStateOf(0) }
     var showTranslation by remember(lesson.id,slide) { mutableStateOf(false) }
@@ -167,7 +198,12 @@ private fun Presentation(lesson: StudyLesson) {
                 Brush.horizontalGradient(listOf(Ocean,Color(0xFF8A65DA)))
             ).padding(20.dp)) {
                 Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                    Text("PRESENTACIÓN INTERACTIVA · "+(slide+1)+"/8",color=Color(0xFFE9F3FF),fontSize=11.sp)
+                    Row(verticalAlignment=Alignment.CenterVertically,
+                        horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+                        EasyIcon(Art.English,Modifier.size(35.dp))
+                        Text("PRESENTACIÓN INTERACTIVA · "+(slide+1)+"/8",
+                            color=Color(0xFFE9F3FF),fontSize=11.sp)
+                    }
                     Text(steps[slide],color=Color.White,fontSize=22.sp)
                     LinearProgressIndicator(progress={ (slide+1)/8f },modifier=Modifier.fillMaxWidth(),
                         color=Color(0xFFB1F0E2),trackColor=Color(0x6679ABF0))
@@ -275,7 +311,7 @@ private fun Games(lesson: StudyLesson, levelLessons: List<StudyLesson>, tracker:
     } else selected==task.answer
 
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Juegos · 16 ejercicios por modalidad","Práctica y repaso del nivel")
+        AreaHeading(Art.Games,"Juegos · 16 ejercicios por modalidad","Práctica y repaso del nivel")
         Text("Cada juego tiene una serie de 16 rondas. Parte de los modelos se reutiliza entre unidades.",
             color=Muted,fontSize=12.sp)
         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
@@ -294,10 +330,13 @@ private fun Games(lesson: StudyLesson, levelLessons: List<StudyLesson>, tracker:
         if(finished) {
             Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
                 Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
-                    Text("Serie de 16 ejercicios finalizada",color=Deep,fontSize=17.sp)
+                    Row(verticalAlignment=Alignment.CenterVertically) {
+                        EasyIcon(Art.Award,Modifier.size(51.dp))
+                        Text("Serie de 16 ejercicios finalizada",color=Deep,fontSize=17.sp)
+                    }
                     Text("Tu puntuación en esta serie: "+points,color=Deep,fontSize=13.sp)
                     Button(onClick={round=0;finished=false;points=0;streak=0},
-                        modifier=Modifier.fillMaxWidth()) { Text("Repetir esta serie") }
+                        modifier=Modifier.fillMaxWidth()) { EasyIcon(Art.Review,Modifier.size(25.dp)); Text("Repetir esta serie") }
                 }
             }
         } else {
@@ -400,7 +439,7 @@ private fun Reading(lesson: StudyLesson, levelLessons: List<StudyLesson>) {
     val completed=checked.count { it }
     val correct=items.indices.count { checked[it] && answers[it]==items[it].answer }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Reading · 16 ejercicios","Comprensión y lectura bilingüe")
+        AreaHeading(Art.Reading,"Reading · 16 ejercicios","Comprensión y lectura bilingüe")
         Card(colors=CardDefaults.cardColors(containerColor=Color.White),
             shape=RoundedCornerShape(17.dp)) {
             Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -467,7 +506,7 @@ private fun Listening(
     val done=checked.count { it }
     val correct=items.indices.count { checked[it] && answers[it]==items[it].answer }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Listening · 16 ejercicios","Escucha e identifica el mensaje")
+        AreaHeading(Art.Listening,"Listening · 16 ejercicios","Escucha e identifica el mensaje")
         LinearProgressIndicator(progress={done.toFloat()/SupplementaryPractice.COUNT},
             modifier=Modifier.fillMaxWidth())
         Text("Ejercicio "+(index+1)+" de 16 · Comprobados: "+done+
@@ -477,10 +516,10 @@ private fun Listening(
                 Text(item.prompt,color=Deep,fontSize=16.sp)
                 Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
                     Button(onClick={speak(item.audioText,1f)},modifier=Modifier.weight(1f)) {
-                        Text("▶ Normal")
+                        EasyIcon(Art.Audio,Modifier.size(23.dp)); Text("Normal")
                     }
                     OutlinedButton(onClick={speak(item.audioText,0.75f)},modifier=Modifier.weight(1f)) {
-                        Text("▶ Lento")
+                        EasyIcon(Art.Audio,Modifier.size(23.dp)); Text("Lento")
                     }
                 }
                 Text("Voz sintética de Android: necesita motor de inglés instalado.",
@@ -539,7 +578,7 @@ private fun Writing(lesson: StudyLesson) {
     val words=drafts[index].trim().split(Regex("\\s+"))
         .count { it.isNotBlank() && drafts[index].isNotBlank() }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Writing · 16 ejercicios","Escribe y conserva tus borradores")
+        AreaHeading(Art.Writing,"Writing · 16 ejercicios","Escribe y conserva tus borradores")
         LinearProgressIndicator(progress={done.toFloat()/SupplementaryPractice.COUNT},
             modifier=Modifier.fillMaxWidth())
         Text("Ejercicio "+(index+1)+" de 16 · Con borrador: "+done+
