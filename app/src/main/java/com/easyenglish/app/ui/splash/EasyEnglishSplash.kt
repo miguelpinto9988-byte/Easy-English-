@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.easyenglish.app.R
+import com.easyenglish.app.ui.icons.Art
+import com.easyenglish.app.ui.icons.EasyIcon
 import com.easyenglish.app.data.ProfileStore
 import kotlin.math.abs
 import kotlin.math.sin
@@ -214,6 +216,7 @@ fun EasyEnglishSplash(onFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom
         ) {
+            EasyIcon(Art.Sparkles, Modifier.size(30.dp))
             val shownLetters = (((progress - 0.25f) / 0.48f) * APP_TITLE.length)
                 .toInt()
                 .coerceIn(0, APP_TITLE.length)
