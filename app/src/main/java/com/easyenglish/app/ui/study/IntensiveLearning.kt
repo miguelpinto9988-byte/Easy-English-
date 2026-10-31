@@ -36,6 +36,8 @@ import com.easyenglish.app.data.IntensiveExerciseBank
 import com.easyenglish.app.data.StudyLibrary
 import com.easyenglish.app.data.PracticeProgressStore
 import com.easyenglish.app.data.StudyLesson
+import com.easyenglish.app.ui.icons.Art
+import com.easyenglish.app.ui.icons.EasyIcon
 import kotlin.random.Random
 
 private val Navy=Color(0xFF143878)
@@ -83,7 +85,14 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
     val correct=provided.trim().replace(Regex("\\s+")," ")==task.answer.trim().replace(Regex("\\s+")," ")
 
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Text("RUTA INTENSIVA · OCHO SESIONES",color=Blue,fontSize=11.sp)
+        Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+            EasyIcon(Art.Intensive,Modifier.height(52.dp))
+            Column {
+                Text("RUTA INTENSIVA · OCHO SESIONES",color=Blue,fontSize=11.sp)
+                Text("Aprendizaje guiado",color=Navy,fontSize=17.sp)
+            }
+        }
         Text(totalExercises.toString()+" ejercicios en esta unidad",color=Navy,fontSize=20.sp)
         Text("Las preguntas de opción y orden se corrigen automáticamente. Las respuestas orales o escritas se comparan con un modelo; no reciben calificación automática.",
             color=Muted,fontSize=12.sp)
@@ -92,7 +101,10 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             lesson.intensiveSessions.forEachIndexed { i,block ->
                 FilterChip(selected=i==sessionIndex,onClick={sessionIndex=i;taskIndex=0},
-                    label={Text(block.title,fontSize=11.sp)})
+                    label={Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                        EasyIcon(Art.Unit,Modifier.height(23.dp))
+                        Text(block.title,fontSize=11.sp)
+                    }})
             }
         }
         Card(colors=CardDefaults.cardColors(containerColor=Pale),shape=RoundedCornerShape(17.dp)) {
@@ -109,9 +121,9 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
                 if(task.stimulus.isNotBlank())Text(task.stimulus,color=Muted,fontSize=14.sp,lineHeight=21.sp)
                 if(task.kind=="listen") {
                     Button(onClick={onSpeak(task.audioText,1f)},modifier=Modifier.fillMaxWidth(),
-                        colors=ButtonDefaults.buttonColors(containerColor=Blue)) { Text("▶ Escuchar") }
+                        colors=ButtonDefaults.buttonColors(containerColor=Blue)) { EasyIcon(Art.Audio,Modifier.height(24.dp)); Text("Escuchar") }
                     OutlinedButton(onClick={onSpeak(task.audioText,0.75f)},modifier=Modifier.fillMaxWidth()) {
-                        Text("▶ Repetir lentamente")
+                        EasyIcon(Art.Audio,Modifier.height(23.dp)); Text("Repetir lentamente")
                     }
                     if(audioStatus.isNotBlank()) Text(audioStatus,color=Muted,fontSize=12.sp)
                     OutlinedButton(onClick={showTranscript=!showTranscript},modifier=Modifier.fillMaxWidth()) {
@@ -123,12 +135,12 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
                 }
                 if(task.kind=="speak" && task.answer.isNotBlank()) {
                     OutlinedButton(onClick={onSpeak(task.answer,0.85f)}) {
-                        Text("▶ Escuchar modelo")
+                        EasyIcon(Art.Speaking,Modifier.height(23.dp)); Text("Escuchar modelo")
                     }
                 }
                 if(task.hint.isNotBlank()) {
                     TextButton(onClick={showHint=!showHint}) {
-                        Text(if(showHint)"Ocultar pista" else "Mostrar pista")
+                        EasyIcon(Art.Help,Modifier.height(23.dp)); Text(if(showHint)"Ocultar pista" else "Mostrar pista")
                     }
                     if(showHint)Text(task.hint,color=Muted,fontSize=12.sp)
                 }
@@ -164,7 +176,11 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
                     if(checked) {
                         Card(colors=CardDefaults.cardColors(containerColor=if(correct)Mint else Amber)) {
                             Column(Modifier.padding(13.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
-                                Text(if(correct)"✓ ¡Correcto!" else "Compara con el modelo",color=Navy,fontSize=14.sp)
+                                Row(verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                                    EasyIcon(if(correct) Art.Check else Art.Review,Modifier.height(25.dp))
+                                    Text(if(correct)"✓ ¡Correcto!" else "Compara con el modelo",
+                                        color=Navy,fontSize=14.sp)
+                                }
                                 Text(task.answer,color=Navy,fontSize=13.sp)
                                 if(task.explanation.isNotBlank())Text(task.explanation,color=Muted,fontSize=12.sp)
                             }
@@ -209,7 +225,10 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
                 },
                 enabled=taskIndex>0 || sessionIndex>0,
                 modifier=Modifier.weight(1f)
-            ) { Text("Anterior") }
+            ) {
+                EasyIcon(Art.Back,Modifier.height(23.dp))
+                Text("Anterior")
+            }
             Button(
                 onClick={
                     // Saltar es posible, pero no se registra como actividad realizada.
@@ -226,7 +245,9 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit, audioS
                 },
                 modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Blue)
             ) { Text(if(sessionIndex==lesson.intensiveSessions.lastIndex && taskIndex==exercises.lastIndex)
-                "Finalizar" else "Siguiente") }
+                "Finalizar" else "Siguiente")
+                EasyIcon(Art.Next,Modifier.height(23.dp))
+            }
         }
         Text("Cada sesión reúne "+exercises.size+" ejercicios: ocho originales y ocho de refuerzo bilingüe. El repaso reutiliza modelos de la unidad y del nivel; no equivale a material nuevo independiente ni a certificación lingüística.",
             color=Muted,fontSize=11.sp)
