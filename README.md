@@ -30,3 +30,7 @@ El flujo de GitHub Actions **Generar APK de prueba** crea el artefacto descargab
 ## Próximos pasos
 
 Realizar pruebas en Android 10+, desarrollar las 156 unidades, crear exámenes reales por destrezas y validar los instrumentos de clasificación. La prueba actual es **solo una demostración de interfaz**.
+
+## Diseño V3
+
+Navegación desde avatar, panel lateral con descripciones, tarjetas de niveles multicolor, 15 iconos PNG de 256×256 y margen de seguridad para las barras nativas de estado y navegación de Android. Separación horizontal de icono y texto: 6 dp.
