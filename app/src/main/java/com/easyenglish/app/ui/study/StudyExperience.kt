@@ -55,6 +55,7 @@ import com.easyenglish.app.data.StudyGame
 import com.easyenglish.app.data.StudyLesson
 import com.easyenglish.app.data.StudyLibrary
 import com.easyenglish.app.data.StudyLine
+import com.easyenglish.app.data.PracticeProgressStore
 import java.util.Locale
 
 private val Ocean=Color(0xFF205ECB)
@@ -70,6 +71,8 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
     val context=LocalContext.current
     val lesson=remember(level,unit) { StudyLibrary.find(context,level,unit) }
     val lines=remember(level) { StudyLibrary.levelLines(context,level) }
+    val dialogueBank=remember(level) { StudyLibrary.levelDialogues(context,level) }
+    val progressStore=remember(context) { PracticeProgressStore(context) }
     var tab by rememberSaveable(level,unit) { mutableStateOf("Presentación") }
     var ttsReady by remember { mutableStateOf(false) }
     var audioStatus by remember { mutableStateOf("") }
@@ -77,13 +80,14 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
         TextToSpeech(context) { ttsReady = it==TextToSpeech.SUCCESS }
     }
     DisposableEffect(speech) { onDispose { speech.stop(); speech.shutdown() } }
-    val speak: (String) -> Unit = { text ->
+    val speak: (String,Float) -> Unit = { text,rate ->
         if (!ttsReady) audioStatus="El motor de voz aún no está disponible."
         else {
             val status=speech.setLanguage(Locale.US)
             if (status==TextToSpeech.LANG_MISSING_DATA || status==TextToSpeech.LANG_NOT_SUPPORTED) {
                 audioStatus="Instala una voz de inglés estadounidense en los ajustes de voz de Android."
             } else {
+                speech.setSpeechRate(rate)
                 speech.speak(text,TextToSpeech.QUEUE_FLUSH,null,"easy-english-study")
                 audioStatus=""
             }
@@ -120,8 +124,8 @@ fun StudyExperience(level: String, unit: Int, onBack: () -> Unit) {
             }
             when(tab){
                 "Presentación" -> item { Presentation(lesson) }
-                "Prácticas" -> item { Games(lesson,lines) }
-                "Lectura" -> item { Reading(lesson,lines) }
+                "Prácticas" -> item { Games(lesson,lines,dialogueBank,progressStore) }
+                "Lectura" -> item { Reading(lesson,dialogueBank) }
                 "Escucha" -> item { Listening(lesson,lines,speak,audioStatus) }
                 "Escritura" -> item { Writing(lesson) }
             }
@@ -149,55 +153,82 @@ private fun Heading(label: String, text: String) {
 private fun Presentation(lesson: StudyLesson) {
     var slide by remember(lesson.id) { mutableStateOf(0) }
     var showTranslation by remember(lesson.id,slide) { mutableStateOf(false) }
+    val steps=listOf("Descubre el objetivo","Regla específica","Modelos con traducción",
+        "Diálogo original","Errores frecuentes","Aplica a tu vida")
     Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(23.dp)) {
         Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Ocean,Color(0xFF8A65DA)))).padding(20.dp)) {
+            Box(Modifier.fillMaxWidth().background(
+                Brush.horizontalGradient(listOf(Ocean,Color(0xFF8A65DA)))
+            ).padding(20.dp)) {
                 Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                    Text("PRESENTACIÓN INTERACTIVA  ·  "+(slide+1)+"/4",color=Color(0xFFE9F3FF),fontSize=11.sp)
-                    Text(listOf("Descubre el objetivo","La regla de uso","Aprende con ejemplos","Evita errores frecuentes")[slide],color=Color.White,fontSize=22.sp)
-                    LinearProgressIndicator(progress={ (slide+1)/4f },modifier=Modifier.fillMaxWidth(),color=Color(0xFFB1F0E2),trackColor=Color(0x6679ABF0))
+                    Text("PRESENTACIÓN INTERACTIVA · "+(slide+1)+"/6",color=Color(0xFFE9F3FF),fontSize=11.sp)
+                    Text(steps[slide],color=Color.White,fontSize=22.sp)
+                    LinearProgressIndicator(progress={ (slide+1)/6f },modifier=Modifier.fillMaxWidth(),
+                        color=Color(0xFFB1F0E2),trackColor=Color(0x6679ABF0))
                 }
             }
-            Column(Modifier.padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
-                when(slide){
-                    0-> {
+            Column(Modifier.padding(horizontal=18.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                when(slide) {
+                    0 -> {
                         Heading("Objetivo comunicativo",lesson.title)
                         Text(lesson.objective,color=Muted,fontSize=15.sp)
-                        Text("Antes de memorizar: observa dónde y para qué se emplea esta estructura.",color=Deep,fontSize=13.sp)
+                        Text("Antes de memorizar, identifica quién habla y qué quiere comunicar.",
+                            color=Deep,fontSize=13.sp)
                     }
-                    1-> {
-                        Heading("Explicación con reglas","¿Cuándo se utiliza?")
-                        Text(lesson.rule,color=Deep,fontSize=15.sp,lineHeight=23.sp)
-                        Card(colors=CardDefaults.cardColors(containerColor=Mint)) {
-                            Text("CONSEJO: "+lesson.attention,modifier=Modifier.padding(13.dp),color=Deep,fontSize=13.sp)
+                    1 -> {
+                        Heading("Teoría de la unidad","Cuándo y cómo utilizarlo")
+                        Text(lesson.specificRule,color=Deep,fontSize=15.sp,lineHeight=23.sp)
+                        Card(colors=CardDefaults.cardColors(containerColor=Soft)) {
+                            Text("Regla general: "+lesson.rule,modifier=Modifier.padding(13.dp),color=Deep,fontSize=13.sp)
                         }
                     }
-                    2-> {
-                        Heading("Modelo en contexto","Escucha, compara y observa")
+                    2 -> {
+                        Heading("Ejemplos comentados","Compara el inglés con el español")
                         lesson.examples.forEachIndexed { i,p ->
-                            Card(colors=CardDefaults.cardColors(containerColor=if(i%2==0) Soft else Orange),modifier=Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(11.dp)) {
+                            Card(colors=CardDefaults.cardColors(containerColor=if(i%2==0) Soft else Orange)) {
+                                Column(Modifier.padding(11.dp),verticalArrangement=Arrangement.spacedBy(3.dp)) {
                                     Text(p.english,color=Deep,fontSize=14.sp)
-                                    if(showTranslation) Text(p.spanish,color=Muted,fontSize=12.sp)
+                                    if(showTranslation)Text(p.spanish,color=Muted,fontSize=12.sp)
                                 }
                             }
                         }
                         OutlinedButton(onClick={showTranslation=!showTranslation}) {
-                            Text(if(showTranslation)"Ocultar traducciones" else "Revelar traducciones")
+                            Text(if(showTranslation)"Ocultar traducciones" else "Mostrar traducciones")
                         }
                     }
-                    else-> {
-                        Heading("Comprueba el significado","Errores y matices")
-                        Text(lesson.attention,color=Deep,fontSize=15.sp)
-                        Text("Repasa: "+lesson.rule,color=Muted,fontSize=13.sp)
-                        Text("Al terminar, abre Prácticas, Lectura, Escucha y Escritura para aplicar lo aprendido.",color=Ocean,fontSize=13.sp)
+                    3 -> {
+                        Heading("Conversación contextual","Intercambio auténtico de práctica")
+                        Card(colors=CardDefaults.cardColors(containerColor=Soft)) {
+                            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(13.dp)) {
+                                lesson.dialogue.forEachIndexed { index,line ->
+                                    Text(line,color=if(index==0)Deep else Ocean,fontSize=15.sp,lineHeight=21.sp)
+                                }
+                            }
+                        }
+                        Text("¿Qué pregunta la primera persona? ¿Cómo responde la segunda?",
+                            color=Muted,fontSize=12.sp)
+                    }
+                    4 -> {
+                        Heading("Matices y advertencias","Evita los errores")
+                        Text(lesson.attention,color=Deep,fontSize=15.sp,lineHeight=22.sp)
+                        Text("Recuerda: "+lesson.specificRule,color=Muted,fontSize=13.sp)
+                    }
+                    else -> {
+                        Heading("Tu turno","Del modelo a la comunicación")
+                        Text(lesson.writing,color=Deep,fontSize=14.sp)
+                        Text(lesson.speaking,color=Muted,fontSize=13.sp)
+                        Text("Revisa tus producciones con estos criterios:",color=Ocean,fontSize=13.sp)
+                        lesson.rubric.forEach { Text("• "+it,color=Deep,fontSize=12.sp) }
                     }
                 }
             }
-            Row(Modifier.fillMaxWidth().padding(horizontal=17.dp,vertical=12.dp),horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-                OutlinedButton(onClick={slide=(slide-1).coerceAtLeast(0)},enabled=slide>0,modifier=Modifier.weight(1f)) { Text("Anterior") }
-                Button(onClick={slide=(slide+1)%4},modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Ocean)) {
-                    Text(if(slide==3)"Repetir" else "Siguiente")
+            Row(Modifier.fillMaxWidth().padding(horizontal=17.dp,vertical=12.dp),
+                horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+                OutlinedButton(onClick={slide=(slide-1).coerceAtLeast(0)},
+                    enabled=slide>0,modifier=Modifier.weight(1f)) { Text("Anterior") }
+                Button(onClick={slide=(slide+1)%6},modifier=Modifier.weight(1f),
+                    colors=ButtonDefaults.buttonColors(containerColor=Ocean)) {
+                    Text(if(slide==5)"Repasar" else "Siguiente")
                 }
             }
         }
@@ -205,12 +236,12 @@ private fun Presentation(lesson: StudyLesson) {
 }
 
 @Composable
-private fun Games(lesson: StudyLesson, bank: List<StudyLine>) {
+private fun Games(lesson: StudyLesson, bank: List<StudyLine>, dialogueBank: List<String>, tracker: PracticeProgressStore) {
     var mode by remember(lesson.id) { mutableStateOf(StudyGame.MEANING) }
     var round by remember(lesson.id) { mutableStateOf(0) }
     var points by remember(lesson.id) { mutableStateOf(0) }
     var streak by remember(lesson.id) { mutableStateOf(0) }
-    val task=remember(lesson.id,mode,round) { PracticeGenerator.create(lesson,bank,mode) }
+    val task=remember(lesson.id,mode,round) { PracticeGenerator.create(lesson,bank,mode,dialogueBank) }
     var selected by remember(task) { mutableStateOf("") }
     var validated by remember(task) { mutableStateOf(false) }
     var flip by remember(task) { mutableStateOf(false) }
@@ -230,6 +261,7 @@ private fun Games(lesson: StudyLesson, bank: List<StudyLine>) {
         Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
             Text("⭐ Puntos: "+points,color=Ocean,fontSize=12.sp)
             Text("🔥 Racha: "+streak,color=Deep,fontSize=12.sp)
+            Text(tracker.nextReviewLabel(lesson.id,"grammar"),color=Muted,fontSize=10.sp)
         }
         Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(19.dp)) {
             Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
@@ -277,14 +309,15 @@ private fun Games(lesson: StudyLesson, bank: List<StudyLine>) {
                                 Text(if(correct)"¡Correcto! +10 puntos" else "Casi. Esta es la solución:",color=Deep,fontSize=14.sp)
                                 Text(task.english,color=Deep,fontSize=13.sp)
                                 Text(task.spanish,color=Muted,fontSize=12.sp)
-                                Text("Regla: "+lesson.rule,color=Muted,fontSize=11.sp)
+                                Text("Explicación: "+task.explanation,color=Muted,fontSize=11.sp)
+                                Text("Regla: "+lesson.specificRule,color=Muted,fontSize=11.sp)
                             }
                         }
                     }
                     if(!validated) {
                         Button(
                             enabled=if(mode==StudyGame.ORDER) order.size==task.tokenOrder.size else selected.isNotBlank(),
-                            onClick={validated=true;if(correct){points+=10;streak++}else streak=0},
+                            onClick={validated=true;tracker.record(lesson.id,task.skill,correct);if(correct){points+=10;streak++}else streak=0},
                             modifier=Modifier.fillMaxWidth(),
                             colors=ButtonDefaults.buttonColors(containerColor=Ocean)
                         ) { Text("Comprobar respuesta") }
@@ -301,46 +334,70 @@ private fun Games(lesson: StudyLesson, bank: List<StudyLine>) {
 }
 
 @Composable
-private fun Reading(lesson: StudyLesson, bank: List<StudyLine>) {
+private fun Reading(lesson: StudyLesson, dialogueBank: List<String>) {
     var translations by remember(lesson.id) { mutableStateOf(false) }
     var answered by remember(lesson.id) { mutableStateOf("") }
-    val focus=lesson.examples.first()
-    val other=bank.map { it.spanish }.filter { it!=focus.spanish }.distinct().take(3)
-    val options=remember(lesson.id) { (other+focus.spanish).shuffled() }
+    var reflection by rememberSaveable(lesson.id) { mutableStateOf("") }
+    val correct=lesson.dialogue[1].substringAfter(": ").trim()
+    val options=remember(lesson.id) {
+        (dialogueBank.filter { it!=correct }.distinct().shuffled().take(3)+correct).shuffled()
+    }
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
-        Heading("Comprensión lectora","Lee y busca significado")
-        Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
-            Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
-                Text("4 enunciados en contexto",color=Ocean,fontSize=11.sp)
-                lesson.examples.forEachIndexed { i,p ->
-                    Text((i+1).toString()+". "+p.english,color=Deep,fontSize=15.sp,lineHeight=22.sp)
-                    if(translations)Text(p.spanish,color=Muted,fontSize=12.sp)
+        Heading("Comprensión lectora","Lee el texto y el diálogo")
+        Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(20.dp)) {
+            Column(Modifier.padding(17.dp),verticalArrangement=Arrangement.spacedBy(13.dp)) {
+                Text("LECTURA · "+lesson.level,color=Ocean,fontSize=11.sp)
+                Text(lesson.readingExtended,color=Deep,fontSize=15.sp,lineHeight=24.sp)
+                if(lesson.level=="B2" || lesson.level=="C1" || lesson.level=="C2") {
+                    Text("Identifica la tesis, la evidencia, una limitación y una inferencia posible.",
+                        color=Muted,fontSize=12.sp)
                 }
+                HorizontalDivider()
+                Text("DIÁLOGO",color=Ocean,fontSize=11.sp)
+                lesson.dialogue.forEach { line -> Text(line,color=Deep,fontSize=14.sp) }
                 OutlinedButton(onClick={translations=!translations}) {
-                    Text(if(translations)"Ocultar ayuda" else "Mostrar traducción y pistas")
+                    Text(if(translations)"Ocultar modelos" else "Mostrar modelos bilingües")
+                }
+                if(translations)lesson.examples.take(2).forEach {
+                    Text(it.english+" — "+it.spanish,color=Muted,fontSize=12.sp)
                 }
             }
         }
         Card(colors=CardDefaults.cardColors(containerColor=Purple)) {
             Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                Text("¿Qué significa la primera oración?",color=Deep,fontSize=15.sp)
+                Text("¿Qué respondió la segunda persona?",color=Deep,fontSize=15.sp)
                 options.forEach { v ->
                     OutlinedButton(onClick={answered=v},modifier=Modifier.fillMaxWidth()) {
                         Text((if(answered==v)"● " else "○ ")+v,fontSize=12.sp)
                     }
                 }
-                if(answered.isNotBlank())Text(
-                    if(answered==focus.spanish)"Respuesta correcta. Bien interpretado." else "Revisa el contexto. Significa: "+focus.spanish,
+                if(answered.isNotBlank()) Text(
+                    if(answered==correct)"Correcto: identificaste la respuesta explícita."
+                        else "Revisa el diálogo. La respuesta es: "+correct,
                     color=Deep,fontSize=12.sp
                 )
             }
         }
-        Text("Esta primera edición usa textos cortos contextualizados. Las lecturas largas y preguntas inferenciales ampliadas requerirán nuevos materiales editoriales.",color=Muted,fontSize=11.sp)
+        Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+            Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                Text("Lectura crítica: reflexión libre",color=Deep,fontSize=15.sp)
+                Text(if(lesson.level=="A0"||lesson.level=="A1"||lesson.level=="A2")
+                    "¿Qué sucede en el diálogo? Responde con una oración."
+                    else "Resume la idea principal del texto y explica qué información falta para verificarla.",
+                    color=Muted,fontSize=12.sp)
+                OutlinedTextField(
+                    value=reflection,onValueChange={reflection=it.take(1000)},
+                    modifier=Modifier.fillMaxWidth(),
+                    label={Text("Mi interpretación")}
+                )
+                Text("Esta reflexión no se corrige automáticamente.",color=Muted,fontSize=11.sp)
+            }
+        }
     }
 }
 
 @Composable
-private fun Listening(lesson: StudyLesson, bank: List<StudyLine>, speak: (String)->Unit, status: String) {
+private fun Listening(lesson: StudyLesson, bank: List<StudyLine>, speak: (String,Float)->Unit, status: String) {
     var index by remember(lesson.id) { mutableStateOf(0) }
     var reveal by remember(lesson.id,index) { mutableStateOf(false) }
     var choice by remember(lesson.id,index) { mutableStateOf("") }
@@ -352,8 +409,14 @@ private fun Listening(lesson: StudyLesson, bank: List<StudyLine>, speak: (String
         Card(colors=CardDefaults.cardColors(containerColor=Soft),shape=RoundedCornerShape(20.dp)) {
             Column(Modifier.fillMaxWidth().padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(12.dp)) {
                 Text("🎧  Audio de práctica "+(index+1)+"/4",color=Deep,fontSize=17.sp)
-                Button(onClick={speak(line.english)},colors=ButtonDefaults.buttonColors(containerColor=Ocean)) {
-                    Text("▶ Escuchar oración")
+                Row(horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                    Button(onClick={speak(line.english,1f)},colors=ButtonDefaults.buttonColors(containerColor=Ocean)) {
+                        Text("▶ Normal")
+                    }
+                    OutlinedButton(onClick={speak(line.english,0.7f)}) { Text("▶ Lento") }
+                }
+                OutlinedButton(onClick={speak(lesson.dialogue.joinToString(". "),1f)}) {
+                    Text("▶ Escuchar el diálogo")
                 }
                 Text("Voz sintética de Android. Requiere que el dispositivo tenga instalada una voz compatible.",color=Muted,fontSize=11.sp,textAlign=TextAlign.Center)
                 if(status.isNotBlank())Text(status,color=Color(0xFFA4532A),fontSize=11.sp)
@@ -391,6 +454,8 @@ private fun Writing(lesson: StudyLesson) {
                     label={Text("Mi redacción")}
                 )
                 Text(words.toString()+" palabras · borrador no enviado a ningún servidor",color=Muted,fontSize=11.sp)
+                Text("Rúbrica orientativa de "+lesson.level,color=Ocean,fontSize=14.sp)
+                lesson.rubric.forEach { Text("□ "+it,color=Deep,fontSize=12.sp) }
                 Text("Lista de revisión personal",color=Ocean,fontSize=14.sp)
                 listOf(
                     "¿La idea se entiende sin ayuda?",

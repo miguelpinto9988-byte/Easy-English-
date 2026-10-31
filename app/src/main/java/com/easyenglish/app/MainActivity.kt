@@ -78,6 +78,7 @@ import com.easyenglish.app.data.ContentStore
 import com.easyenglish.app.data.DownloadPack
 import com.easyenglish.app.data.LevelCatalog
 import com.easyenglish.app.data.ProfileStore
+import com.easyenglish.app.data.PracticeProgressStore
 import com.easyenglish.app.data.UserProfile
 import com.easyenglish.app.ui.splash.EasyEnglishSplash
 import com.easyenglish.app.ui.study.StudyExperience
@@ -758,18 +759,45 @@ private fun LessonPage(level: String, unit: Int, onBack: () -> Unit) {
 
 @Composable
 private fun ProgressPage(profile: UserProfile, onLevels: () -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        item { ScreenTitle("Mi progreso", "Ruta actual: " + profile.level) }
+    val context=LocalContext.current
+    val stats=remember { PracticeProgressStore(context).summary() }
+    val accuracy=if(stats.attempts==0)0f else stats.correct.toFloat()/stats.attempts
+    LazyColumn(contentPadding=PaddingValues(18.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
+        item { ScreenTitle("Mi progreso","Tu actividad de práctica en este dispositivo") }
         item {
-            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                    Text("Unidades terminadas: 0 / 156", color = Navy, fontSize = 18.sp)
-                    LinearProgressIndicator(progress = { 0f }, modifier = Modifier.fillMaxWidth())
-                    Text("Las evaluaciones por destreza se incorporarán con un banco de pruebas validado.", fontSize = 12.sp, color = Gray)
+            Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
+                Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
+                    Text("Respuestas correctas: "+stats.correct+" / "+stats.attempts,
+                        color=Navy,fontSize=18.sp)
+                    LinearProgressIndicator(progress={accuracy},modifier=Modifier.fillMaxWidth())
+                    Text("Aciertos en ejercicios autocorregibles; no es una nota MCER.",
+                        fontSize=12.sp,color=Gray)
                 }
             }
         }
-        item { PrimaryAction("Ver niveles", onLevels) }
+        item {
+            FeatureCard(
+                "Repasos sugeridos: "+stats.dueUnits,
+                "Recuperación espaciada basada en tus intentos",
+                R.drawable.nav_progress,
+                onClick=onLevels
+            )
+        }
+        item {
+            Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFEAF4FF))) {
+                Column(Modifier.padding(15.dp),verticalArrangement=Arrangement.spacedBy(7.dp)) {
+                    Text("Áreas que conviene practicar",color=Navy,fontSize=16.sp)
+                    Text(
+                        if(stats.weakSkills.isEmpty())"Aún no hay suficientes respuestas para sugerir refuerzos."
+                        else stats.weakSkills.joinToString(" · "),
+                        color=Gray,fontSize=12.sp
+                    )
+                    Text("La clasificación inicial y las tareas abiertas todavía requieren evaluadores y rúbricas validadas.",
+                        color=Gray,fontSize=11.sp)
+                }
+            }
+        }
+        item { PrimaryAction("Explorar unidades",onLevels) }
     }
 }
 
