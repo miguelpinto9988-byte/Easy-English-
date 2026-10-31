@@ -235,7 +235,7 @@ private fun EasyEnglishApplication() {
                         onAudio = { enableAudio = it; prefs.setEnableAudio(it) },
                         onDownloads = { navigate(Page.DOWNLOADS) }
                     )
-                    Page.DOWNLOADS -> DownloadsPage(contentStore)
+                    Page.DOWNLOADS -> DownloadsPage(contentStore, enableAudio)
                 }
             }
         }
@@ -632,10 +632,10 @@ private fun SettingsPage(
                 Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Visual y accesibilidad", fontSize = 17.sp, color = Navy)
                     androidx.compose.material3.Switch(checked = reduceMotion, onCheckedChange = onReduce)
-                    Text("Reducir animaciones: " + if (reduceMotion) "Activado" else "Desactivado", fontSize = 13.sp)
+                    Text("Reducir animaciones: " + (if (reduceMotion) "Activado" else "Desactivado"), fontSize = 13.sp)
                     HorizontalDivider()
                     androidx.compose.material3.Switch(checked = enableAudio, onCheckedChange = onAudio)
-                    Text("Permitir audio: " + if (enableAudio) "Activado" else "Desactivado", fontSize = 13.sp)
+                    Text("Permitir audio: " + (if (enableAudio) "Activado" else "Desactivado"), fontSize = 13.sp)
                     Text("Todas las letras se muestran en negrita.", color = Gray, fontSize = 12.sp)
                 }
             }
@@ -646,7 +646,7 @@ private fun SettingsPage(
 }
 
 @Composable
-private fun DownloadsPage(store: ContentStore) {
+private fun DownloadsPage(store: ContentStore, enableAudio: Boolean) {
     val scope = rememberCoroutineScope()
     var catalog by remember { mutableStateOf<List<DownloadPack>>(emptyList()) }
     var loading by remember { mutableStateOf(false) }
@@ -679,7 +679,7 @@ private fun DownloadsPage(store: ContentStore) {
                     Text(pack.description, color = Gray, fontSize = 12.sp)
                     Text(pack.type.uppercase(Locale.US) + " · " + if (store.hasPack(pack)) "Descargado" else "Disponible", color = Blue, fontSize = 11.sp)
                     if (store.hasPack(pack) && pack.type == "audio") {
-                        OutlinedButton(onClick = {
+                        OutlinedButton(enabled = enableAudio, onClick = {
                             try { store.playAudio(pack) ; played = "Reproduciendo audio descargado." }
                             catch (_: Exception) { played = "No se pudo reproducir este audio." }
                         }) { Text("Reproducir audio") }
