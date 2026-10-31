@@ -42,3 +42,5 @@ La teoría, los diálogos y las tareas se redactaron originalmente y se guiaron 
 - [EEF — Feedback](https://educationendowmentfoundation.org.uk/education-evidence/guidance-reports/feedback)
 
 No reproducir ni distribuir materiales de terceros sin permisos y licencias apropiados.
+
+Integración v0.5.0: ejecutar CI para comprobar datos curriculares y APK nativa.
