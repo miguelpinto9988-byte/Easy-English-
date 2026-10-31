@@ -240,12 +240,17 @@ object SupplementaryPractice {
                 skill = "reading"
             )
         }
-        // A0 tiene doce unidades: cuatro cloze extra del texto original.
-        if (mode == StudyGame.CLOZE && round >= levelLessons.size) {
-            val model = bank[(lesson.number + round) % bank.size]
+        // Una pregunta cerrada existente y quince cloze de frases distintas.
+        // El propio enunciado limita la corrección a la palabra del modelo.
+        if (mode == StudyGame.CLOZE && round >= 1) {
+            val local = lesson.examples.distinctBy { it.english to it.spanish }
+            val localEnglish = local.map { it.english }.toSet()
+            val review = bank.filter { it.english !in localEnglish }
+            val model = if (round <= 4) local[round-1]
+                        else review[(lesson.number + round - 5) % review.size]
             val words = model.english.split(Regex("\\s+"))
                 .map { it.trim('?', '!', '.', ',', ';', ':') }.filter { it.length >= 2 }
-            val word = words[(round - levelLessons.size) % words.size]
+            val word = words[(round - 1) % words.size]
             val alternatives = bank.flatMap { it.english.split(Regex("\\s+")) }
                 .map { it.trim('?', '!', '.', ',', ';', ':') }
                 .filter { it.isNotBlank() && it != word }.distinct()
