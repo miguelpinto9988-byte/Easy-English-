@@ -32,6 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.easyenglish.app.data.IntensiveExerciseBank
+import com.easyenglish.app.data.StudyLibrary
 import com.easyenglish.app.data.PracticeProgressStore
 import com.easyenglish.app.data.StudyLesson
 import kotlin.random.Random
@@ -55,10 +57,17 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
             addAll(prefs.getStringSet("done:"+lesson.id,emptySet()) ?: emptySet())
         }
     }
+    val bank=remember(lesson.level) { StudyLibrary.levelLines(context,lesson.level) }
     var sessionIndex by rememberSaveable(lesson.id) { mutableStateOf(0) }
-    var taskIndex by rememberSaveable(lesson.id,sessionIndex) { mutableStateOf(0) }
+    // No usar sessionIndex como clave: al regresar a una sesión debe conservarse
+    // el último índice seleccionado, no reiniciarse a la primera pregunta.
+    var taskIndex by rememberSaveable(lesson.id) { mutableStateOf(0) }
     val session=lesson.intensiveSessions[sessionIndex]
-    val task=session.tasks[taskIndex]
+    val exercises=remember(lesson.id,sessionIndex) {
+        IntensiveExerciseBank.build(lesson,session,sessionIndex,bank)
+    }
+    val totalExercises=lesson.intensiveSessions.sumOf { it.tasks.size+IntensiveExerciseBank.EXTRA_PER_SESSION }
+    val task=exercises[taskIndex]
     var selected by remember(task.id) { mutableStateOf("") }
     var checked by remember(task.id) { mutableStateOf(false) }
     var showModel by remember(task.id) { mutableStateOf(false) }
@@ -73,11 +82,11 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
 
     Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
         Text("RUTA INTENSIVA · OCHO SESIONES",color=Blue,fontSize=11.sp)
-        Text("64 actividades en esta unidad",color=Navy,fontSize=20.sp)
+        Text(totalExercises.toString()+" ejercicios en esta unidad",color=Navy,fontSize=20.sp)
         Text("Las preguntas de opción y orden se corrigen automáticamente. Las respuestas orales o escritas se comparan con un modelo; no reciben calificación automática.",
             color=Muted,fontSize=12.sp)
-        LinearProgressIndicator(progress={completed.size.coerceAtMost(64)/64f},modifier=Modifier.fillMaxWidth())
-        Text(completed.size.coerceAtMost(64).toString()+" de 64 actividades realizadas",color=Muted,fontSize=11.sp)
+        LinearProgressIndicator(progress={completed.size.coerceAtMost(totalExercises)/totalExercises.toFloat()},modifier=Modifier.fillMaxWidth())
+        Text(completed.size.coerceAtMost(totalExercises).toString()+" de "+totalExercises+" ejercicios realizados",color=Muted,fontSize=11.sp)
         Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
             lesson.intensiveSessions.forEachIndexed { i,block ->
                 FilterChip(selected=i==sessionIndex,onClick={sessionIndex=i;taskIndex=0},
@@ -88,7 +97,8 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
             Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 Text(session.title,color=Navy,fontSize=18.sp)
                 Text(session.subtitle,color=Muted,fontSize=12.sp)
-                Text("Actividad "+(taskIndex+1)+" de 8 · "+task.skill,color=Blue,fontSize=11.sp)
+                Text("Ejercicio "+(taskIndex+1)+" de "+exercises.size+" · "+task.skill,color=Blue,fontSize=11.sp)
+                if(taskIndex>=session.tasks.size) Text("Repaso bilingüe: unidad y nivel",color=Muted,fontSize=11.sp)
             }
         }
         Card(colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(18.dp)) {
@@ -175,25 +185,33 @@ fun IntensiveLearning(lesson: StudyLesson, onSpeak: (String,Float)->Unit) {
             OutlinedButton(
                 onClick={
                     if(taskIndex>0) taskIndex--
-                    else if(sessionIndex>0) { sessionIndex--;taskIndex=7 }
+                    else if(sessionIndex>0) {
+                        val previous=sessionIndex-1
+                        taskIndex=lesson.intensiveSessions[previous].tasks.size+
+                            IntensiveExerciseBank.EXTRA_PER_SESSION-1
+                        sessionIndex=previous
+                    }
                 },
                 enabled=taskIndex>0 || sessionIndex>0,
                 modifier=Modifier.weight(1f)
             ) { Text("Anterior") }
             Button(
                 onClick={
-                    if(task.id !in completed) {
+                    // Saltar es posible, pero no se registra como actividad realizada.
+                    // Las respuestas abiertas solo se marcan tras comparar el modelo.
+                    if((checked || (!closed && showModel)) && task.id !in completed) {
                         completed.add(task.id)
                         prefs.edit().putStringSet("done:"+lesson.id,completed.toSet()).apply()
                     }
-                    if(taskIndex<7)taskIndex++
+                    if(taskIndex<exercises.lastIndex)taskIndex++
                     else if(sessionIndex<lesson.intensiveSessions.lastIndex) { sessionIndex++;taskIndex=0 }
                     else {sessionIndex=0;taskIndex=0}
                 },
                 modifier=Modifier.weight(1f),colors=ButtonDefaults.buttonColors(containerColor=Blue)
-            ) { Text(if(sessionIndex==7&&taskIndex==7)"Finalizar" else "Siguiente") }
+            ) { Text(if(sessionIndex==lesson.intensiveSessions.lastIndex && taskIndex==exercises.lastIndex)
+                "Finalizar" else "Siguiente") }
         }
-        Text("Este recorrido usa ejemplos revisables, combinaciones y actividades abiertas; no equivale a 64 frases nuevas ni a una certificación lingüística.",
+        Text("Cada sesión reúne "+exercises.size+" ejercicios: ocho originales y ocho de refuerzo bilingüe. El repaso reutiliza modelos de la unidad y del nivel; no equivale a material nuevo independiente ni a certificación lingüística.",
             color=Muted,fontSize=11.sp)
     }
 }
