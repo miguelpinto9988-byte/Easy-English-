@@ -1,4 +1,4 @@
-# Easy English Android v0.8.0 — 16 ejercicios en las cinco áreas de práctica
+# Easy English Android v0.9.0 — 16 ejercicios y nueva iconografía PNG
 
 Aplicación Android 10+ en Kotlin y Jetpack Compose. Mantiene navegación V3 desde el avatar, iconos PNG HD, separación de 6 dp y letras en negrita.
 
@@ -20,6 +20,14 @@ La biblioteca curricular anterior contenía aproximadamente **1.209.022 caracter
 - Las ocho sesiones aparecen en la pestaña Ruta intensiva. El avance contabiliza los **128 ejercicios** de cada unidad y no da por completados los que el alumno salta sin comprobar o contrastar. El progreso se guarda solo en el dispositivo.
 - La biblioteca se carga por nivel desde los siete paquetes JSON. El banco de juegos aleatorios anterior se conserva.
 - Los contenidos instalados funcionan sin internet. La reproducción de voz depende de un motor TTS con voz adecuada instalada en Android.
+
+## Rediseño gráfico PNG v0.9.0
+
+- Se incorporan **30 motivos PNG multicolor con fondo transparente**, organizados en un atlas que la app recorta mediante `EasyIcons.kt`. Se muestran en el menú, tarjetas, cabeceras educativas, controles de escucha, navegación y elementos decorativos.
+- **El zorrito con su libro no se modifica ni sustituye**: se mantienen sus archivos, la pantalla de inicio, la cabecera y la declaración del icono Android.
+- Los PNG integrados son **adaptaciones para interfaz de los motivos ilustrados**; las imágenes originales de alta resolución se conservan aparte para uso gráfico.
+- Se comprueba la transparencia y la integridad del atlas con `python3 scripts/validate_icon_atlas.py`.
+- La correspondencia exacta de cada motivo, las ubicaciones y las verificaciones pendientes están documentadas en `docs/ICONOGRAFIA_V090.md`.
 
 ## Precauciones pedagógicas
 
