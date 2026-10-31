@@ -1,10 +1,10 @@
-# Teoría visual PNG · Easy English 0.10.0
+# Teoría visual PNG · Easy English 0.11.0 (ampliación)
 
 ## Alcance
 
-La pestaña **Presentación** de las 156 unidades A0–C2 utiliza ahora un visor de **ocho diapositivas infográficas PNG por unidad** (1.248 posibles, más variantes con y sin traducción). Las diapositivas se crean en el dispositivo a partir del currículo de la unidad y se guardan temporalmente en su caché, no en un servidor.
+La pestaña **Presentación** de las 156 unidades A0–C2 utiliza ahora un visor de **dieciséis diapositivas infográficas PNG por unidad** (2.496 posibles, más variantes con y sin traducción). Las diapositivas se crean en el dispositivo a partir del currículo de la unidad y se guardan temporalmente en su caché, no en un servidor.
 
-Se conservan los ocho temas existentes: objetivo, regla específica, base teórica, ejemplos bilingües, conversación, errores frecuentes, lectura contextual y producción. No se pierde el contenido de teoría almacenado en los JSON.
+Las dieciséis diapositivas cubren: introducción y objetivos, regla, explicación, cuatro ejemplos separados, conversación, errores frecuentes, lectura, dos preguntas de comprensión, escritura, expresión oral, un ejercicio de completar y recapitulación. No se pierde el contenido de teoría almacenado en los JSON.
 
 ## Composición y uso
 
@@ -35,3 +35,10 @@ Se conservan los ocho temas existentes: objetivo, regla específica, base teóri
 - Las imágenes PNG se encuentran en la caché interna de la app; esta versión no incorpora todavía un botón de exportación a la galería.
 
 **Criterio recomendado para integrar en main:** GitHub Actions finaliza con éxito, comprobar ocho diapositivas de A0, A1, B1 y C2 y validar la interfaz con un dispositivo Android real.
+
+
+## Ampliación 0.11.0
+
+La clase `TheorySlidePlan` organiza **16 escenas distintas para cada unidad** usando únicamente los datos del currículo. `TheoryPresentation` ofrece acceso directo a cada página, audio contextual y un botón para generar las 16 imágenes en la caché local del teléfono. El contenido completo de cualquier texto largo sigue accesible en una ventana desplazable. La app no incorpora 2.496 archivos estáticos de gran tamaño: genera exactamente el PNG de cada unidad cuando se solicita, con posibilidad de preparar el paquete completo de esa unidad.
+
+El control de calidad documentado es estructural y técnico. No debe interpretarse como una revisión docente individual de las 2.496 imágenes ni como una prueba de legibilidad en todas las pantallas Android.
