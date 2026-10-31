@@ -26,10 +26,10 @@ import java.io.FileOutputStream
  * El logotipo fox_mascot nunca se modifica ni se utiliza como sustituto.
  */
 object TheorySlideRenderer {
-    const val COUNT = 8
+    const val COUNT = TheorySlidePlan.COUNT
     private const val W = 900
     private const val H = 1480
-    private const val VERSION = "theory_png_v1"
+    private const val VERSION = "theory_png_v2_16slides"
     private val NAVY = GColor.rgb(20,54,119)
     private val BLUE = GColor.rgb(39,108,221)
     private val INK = GColor.rgb(29,56,107)
@@ -42,11 +42,7 @@ object TheorySlideRenderer {
     private val WARM = GColor.rgb(255,247,228)
     private val WHITE = GColor.WHITE
 
-    val titles = listOf(
-        "Tu objetivo", "La regla, paso a paso", "Entiende la estructura",
-        "Ejemplos bilingües", "Conversación en contexto",
-        "Errores y consejos", "Lectura guiada", "Practica lo aprendido"
-    )
+    val titles = TheorySlidePlan.titles
 
     fun imageFile(context: Context, lesson: StudyLesson, index: Int, translations: Boolean): File {
         require(index in 0 until COUNT)
@@ -63,7 +59,8 @@ object TheorySlideRenderer {
         val bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(bmp)
         val brush = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        val tint = listOf(BLUE,PURPLE,TEAL,BLUE,ORANGE,PURPLE,TEAL,BLUE)[index]
+        val frame = TheorySlidePlan.build(lesson)[index]
+        val tint = listOf(BLUE,PURPLE,TEAL,ORANGE,BLUE,PURPLE,TEAL,BLUE)[index % 8]
 
         fun panel(x: Float, y: Float, w: Float, h: Float, r: Float, color: Int) {
             brush.shader = null
@@ -144,81 +141,115 @@ object TheorySlideRenderer {
         c.drawCircle(20f,270f,120f,brush)
         label("EASY ENGLISH · "+lesson.level+" · UNIDAD "+lesson.number,
             70,51,752,28f,WHITE,true,48)
-        label(titles[index],70,122,750,59f,WHITE,true,148)
+        label(frame.title,70,122,760,55f,WHITE,true,147)
         repeat(COUNT) { i ->
-            panel(70f+i*94,271f,76f,9f,5f,if(i<=index)ORANGE else 0x7799BDFF)
+            panel(70f+i*46,271f,35f,9f,5f,if(i<=index)ORANGE else 0x7799BDFF)
         }
         panel(45f,335f,810f,1013f,31f,WHITE)
-        when(index) {
-            0 -> {
-                heading("¿Qué aprenderás?",379,14)
-                label(lesson.title,80,510,730,54f,tint,true,160)
-                label(lesson.objective,80,663,730,37f,INK,false,174)
-                heading("Al terminar podrás:",883,12)
-                lesson.learningOutcomes.take(3).forEachIndexed { i,outcome ->
-                    icon(27,80,967+i*105,44)
-                    label(outcome,140,981+i*105,660,29f,INK,false,88)
-                }
+        // The page's wording comes from its unit-specific TheoryFrame.
+        fun bullets(startY: Int, items: List<String>, theme: Int = PALE, gap: Int = 127) {
+            items.take(4).forEachIndexed { i, item ->
+                val y=startY+i*gap
+                panel(70f,y.toFloat(),760f,(gap-12).toFloat(),21f,theme)
+                icon(if(i%2==0) 27 else 22,87,y+20,57)
+                label(item,158,y+24,637,30f,INK,false,gap-36)
             }
-            1 -> {
-                heading("La idea principal",378,2)
-                panel(70f,497f,760f,395f,24f,PALE)
-                label(lesson.specificRule,99,537,698,37f,NAVY,false,319)
-                heading("Un consejo",923,15)
-                panel(70f,1016f,760f,233f,22f,MINT)
-                label(lesson.attention,100,1052,700,32f,INK,false,179)
+        }
+        fun content(y: Int, height: Int, prose: String, theme: Int = PALE,
+                    size: Float = 35f, color: Int = INK) {
+            panel(69f,y.toFloat(),762f,height.toFloat(),25f,theme)
+            label(prose,101,y+35,688,size,color,false,height-63)
+        }
+        fun tag(heading: String, y: Int, art: Int = frame.art) {
+            icon(art,76,y-13,77)
+            label(heading,157,y+2,650,34f,NAVY,true,92)
+        }
+        when(frame.kind) {
+            "cover" -> {
+                icon(25,342,414,208)
+                label(frame.lead,95,647,711,54f,NAVY,true,160)
+                label(frame.body,99,815,703,33f,GREY,false,170)
+                tag("Tres logros que practicarás",1025,14)
+                bullets(1114,frame.bullets.take(2),MINT,104)
             }
-            2 -> {
-                heading("Cómo funciona",379,26)
-                panel(70f,493f,760f,378f,23f,PALE)
-                label(lesson.rule,99,536,704,35f,INK,false,314)
-                heading("Observa el modelo",922,2)
-                example(1014,lesson.examples[0].english,lesson.examples[0].spanish,false)
-                example(1178,lesson.examples[1].english,lesson.examples[1].spanish,true)
+            "list" -> {
+                tag(frame.lead,412,14)
+                label(frame.body,90,542,725,32f,INK,false,144)
+                bullets(721,frame.bullets,MINT,176)
             }
-            3 -> {
-                heading("Mira y compara",378,2)
-                lesson.examples.take(4).forEachIndexed { i,pair ->
-                    example(483+i*174,pair.english,pair.spanish,i%2==1)
-                }
-                photoScenes(1213)
+            "rule" -> {
+                tag("Idea central de la unidad",418,2)
+                content(553,393,frame.body,PALE,37f,NAVY)
+                tag("Presta atención",985,15)
+                content(1104,178,frame.note,WARM,29f,INK)
             }
-            4 -> {
-                heading("Un diálogo realista",378,25)
-                panel(70f,502f,760f,282f,26f,PALE)
-                icon(8,93,527,73)
-                label(lesson.dialogue[0],184,546,600,34f,INK,true,190)
-                panel(70f,819f,760f,281f,26f,MINT)
-                icon(25,93,844,73)
-                label(lesson.dialogue[1],184,854,600,34f,INK,true,202)
-                label("Localiza la pregunta y la respuesta.",
-                    94,1142,715,29f,GREY,false,55)
-                photoScenes(1201)
+            "explain" -> {
+                tag("Conecta estas ideas",413,26)
+                content(540,432,frame.body,PALE,34f,INK)
+                tag("Cómo aplicarla",1020,2)
+                content(1128,178,frame.note,MINT,27f,INK)
             }
-            5 -> {
-                heading("Evita este error",378,15)
-                panel(70f,505f,760f,372f,23f,WARM)
-                label(lesson.attention,99,548,700,37f,INK,false,290)
-                heading("Compara con la regla",923,11)
-                panel(70f,1020f,760f,252f,24f,PALE)
-                label(lesson.specificRule,99,1055,700,29f,INK,false,190)
+            "example" -> {
+                tag(frame.label,411,frame.art)
+                content(529,235,frame.english,PALE,43f,NAVY)
+                tag("Su significado",800,5)
+                content(898,175,if(translations) frame.spanish
+                    else "Piensa en la traducción y después activa «Mostrar traducciones».",
+                    MINT,if(translations)34f else 27f,INK)
+                label("EJEMPLO DE ESTA UNIDAD · FOTO ILUSTRATIVA",96,1137,680,23f,GREY,true,54)
+                photoScenes(1192)
             }
-            6 -> {
-                heading("Lee en contexto",378,5)
-                panel(70f,508f,760f,607f,23f,PALE)
-                label(lesson.contextualText,98,549,702,33f,INK,false,514)
-                label("Vuelve a leer y encuentra la estructura estudiada.",
-                    89,1189,720,29f,GREY,false,110)
+            "dialogue" -> {
+                tag("Escucha la conversación",418,8)
+                content(557,248,frame.body,PALE,33f,NAVY)
+                content(834,247,frame.note,MINT,33f,INK)
+                label("IMÁGENES ILUSTRATIVAS DE CONTEXTO",95,1136,700,22f,GREY,true,47)
+                photoScenes(1191)
             }
-            7 -> {
-                heading("Ahora te toca",379,18)
-                panel(70f,503f,760f,262f,24f,MINT)
-                label(lesson.writing,101,552,697,35f,NAVY,false,182)
-                heading("Practica en voz alta",810,8)
-                panel(70f,904f,760f,241f,24f,PALE)
-                label(lesson.speaking,101,952,697,34f,INK,false,178)
-                label("Continúa en «Prácticas» para reforzar el tema.",
-                    90,1198,710,28f,GREY,false,100)
+            "mistake" -> {
+                tag(frame.lead,410,15)
+                content(540,376,frame.body,WARM,37f,INK)
+                tag("Regla para recordar",968,11)
+                content(1082,207,frame.note,PALE,29f,NAVY)
+            }
+            "reading" -> {
+                tag("Busca las pistas",405,5)
+                content(522,667,frame.body,PALE,32f,INK)
+                label(frame.note,87,1212,721,27f,TEAL,true,91)
+            }
+            "questions" -> {
+                tag("Pregunta uno",416,14)
+                content(533,260,frame.body,PALE,35f,NAVY)
+                tag("Pregunta dos",833,14)
+                content(943,254,frame.note,MINT,35f,INK)
+                label("Vuelve a la lectura antes de comprobar tus respuestas.",
+                    86,1218,725,26f,GREY,false,66)
+            }
+            "writing" -> {
+                tag("Tu propuesta",408,7)
+                content(527,330,frame.body,PALE,36f,NAVY)
+                tag("Revisa tu texto",896,27)
+                bullets(1014,frame.bullets,MINT,91)
+            }
+            "speaking" -> {
+                tag("Habla con confianza",412,8)
+                content(530,420,frame.body,PALE,37f,NAVY)
+                icon(8,339,955,210)
+                label(frame.note,99,1180,702,30f,INK,false,103)
+            }
+            "cloze" -> {
+                tag("Completa la frase",415,15)
+                content(538,289,frame.body,PALE,42f,NAVY)
+                tag("Elige una de estas opciones",863,14)
+                bullets(965,frame.bullets,WARM,86)
+            }
+            "recap" -> {
+                tag("La regla que aprendiste",412,21)
+                content(528,295,frame.body,PALE,34f,NAVY)
+                tag("Solución del reto",860,27)
+                content(974,225,frame.note,MINT,30f,INK)
+                label("¡Has terminado! Ve a Prácticas para continuar.",
+                    92,1240,710,27f,TEAL,true,78)
             }
         }
         panel(45f,1372f,810f,72f,19f,NAVY)
