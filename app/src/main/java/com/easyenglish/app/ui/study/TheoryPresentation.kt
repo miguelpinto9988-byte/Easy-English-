@@ -2,10 +2,15 @@ package com.easyenglish.app.ui.study
 
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,6 +25,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -29,10 +36,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -57,6 +67,7 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
     var translations by rememberSaveable(lesson.id) { mutableStateOf(false) }
     var expanded by rememberSaveable(lesson.id,index) { mutableStateOf(false) }
     var preparing by remember(lesson.id) { mutableStateOf(false) }
+    var enlarged by remember(lesson.id,index) { mutableStateOf(false) }
     var prepStatus by remember(lesson.id) { mutableStateOf("") }
     val scope=rememberCoroutineScope()
     val frames=remember(lesson.id) { TheorySlidePlan.build(lesson) }
@@ -115,6 +126,44 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                     else "Infografía "+(index+1)+" de 16. "+frame.title,
                     modifier=Modifier.fillMaxWidth().aspectRatio(if(bundled) 16f/9f else 900f/1480f),
                     contentScale=ContentScale.Fit)
+            }
+        }
+        if(bundled && bitmap!=null) {
+            TextButton(onClick={enlarged=true},modifier=Modifier.fillMaxWidth()) {
+                EasyIcon(Art.Reading,Modifier.size(24.dp))
+                Text("Ampliar diapositiva · pellizca para acercar",fontSize=12.sp)
+            }
+        }
+        if(bundled && enlarged && bitmap!=null) {
+            Dialog(
+                onDismissRequest={enlarged=false},
+                properties=DialogProperties(usePlatformDefaultWidth=false)
+            ) {
+                var zoom by remember(index) { mutableFloatStateOf(1f) }
+                var shift by remember(index) { mutableStateOf(Offset.Zero) }
+                val gestures=rememberTransformableState { zoomChange, panChange, _ ->
+                    zoom=(zoom*zoomChange).coerceIn(1f,5f)
+                    shift=if(zoom==1f) Offset.Zero else shift+panChange
+                }
+                Box(Modifier.fillMaxSize().background(Color.Black),
+                    contentAlignment=Alignment.Center) {
+                    Image(
+                        bitmap=bitmap!!,
+                        contentDescription="Diapositiva "+(index+1)+" ampliada",
+                        modifier=Modifier.fillMaxWidth()
+                            .graphicsLayer(
+                                scaleX=zoom,scaleY=zoom,
+                                translationX=shift.x,translationY=shift.y
+                            ).transformable(gestures),
+                        contentScale=ContentScale.Fit
+                    )
+                    TextButton(
+                        onClick={enlarged=false},
+                        modifier=Modifier.align(Alignment.TopEnd)
+                    ) {
+                        Text("Cerrar",color=Color.White)
+                    }
+                }
             }
         }
         if(!bundled) TextButton(onClick={expanded=true},modifier=Modifier.fillMaxWidth()) {
