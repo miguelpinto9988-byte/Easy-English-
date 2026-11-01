@@ -83,6 +83,8 @@ import com.easyenglish.app.data.UserProfile
 import com.easyenglish.app.ui.splash.EasyEnglishSplash
 import com.easyenglish.app.ui.study.StudyExperience
 import com.easyenglish.app.ui.theme.EasyEnglishTheme
+import com.easyenglish.app.ui.icons.Art
+import com.easyenglish.app.ui.icons.EasyIcon
 import kotlinx.coroutines.launch
 import java.util.Locale
 import android.speech.tts.TextToSpeech
@@ -186,16 +188,16 @@ private fun EasyEnglishApplication() {
                     }
                 }
                 item { DrawerSection("APRENDIZAJE") }
-                item { DrawerOption(R.drawable.nav_home, "Inicio", "Panel principal", page == Page.HOME) { navigate(Page.HOME) } }
-                item { DrawerOption(R.drawable.nav_levels, "Niveles y unidades", "A0 a C2 · 156 unidades", page == Page.LEVELS || page == Page.UNITS) { navigate(Page.LEVELS) } }
-                item { DrawerOption(R.drawable.nav_book, "Mi clase", "Volver a la lección", page == Page.LESSON) { navigate(Page.LESSON) } }
-                item { DrawerOption(R.drawable.nav_progress, "Mi progreso", "Resumen de tu ruta", page == Page.PROGRESS) { navigate(Page.PROGRESS) } }
+                item { DrawerOption(Art.Home, "Inicio", "Panel principal", page == Page.HOME) { navigate(Page.HOME) } }
+                item { DrawerOption(Art.Levels, "Niveles y unidades", "A0 a C2 · 156 unidades", page == Page.LEVELS || page == Page.UNITS) { navigate(Page.LEVELS) } }
+                item { DrawerOption(Art.Unit, "Mi clase", "Volver a la lección", page == Page.LESSON) { navigate(Page.LESSON) } }
+                item { DrawerOption(Art.Progress, "Mi progreso", "Resumen de tu ruta", page == Page.PROGRESS) { navigate(Page.PROGRESS) } }
                 item { HorizontalDivider(Modifier.padding(horizontal = 18.dp, vertical = 8.dp), color = Color(0xFFE2EAFA)) }
                 item { DrawerSection("PERFIL Y EVALUACIÓN") }
-                item { DrawerOption(R.drawable.nav_profile, "Editar perfil", "Foto, nombre y preferencias", page == Page.PROFILE) { navigate(Page.PROFILE) } }
-                item { DrawerOption(R.drawable.nav_exam, "Prueba de clasificación", "Evaluar habilidades · demostración", page == Page.PLACEMENT) { navigate(Page.PLACEMENT) } }
-                item { DrawerOption(R.drawable.nav_settings, "Preferencias", "Accesibilidad y sonido", page == Page.SETTINGS) { navigate(Page.SETTINGS) } }
-                item { DrawerOption(R.drawable.nav_download, "Descargar contenidos", "Más temas y audios", page == Page.DOWNLOADS) { navigate(Page.DOWNLOADS) } }
+                item { DrawerOption(Art.Profile, "Editar perfil", "Foto, nombre y preferencias", page == Page.PROFILE) { navigate(Page.PROFILE) } }
+                item { DrawerOption(Art.Target, "Prueba de clasificación", "Evaluar habilidades · demostración", page == Page.PLACEMENT) { navigate(Page.PLACEMENT) } }
+                item { DrawerOption(Art.Settings, "Preferencias", "Accesibilidad y sonido", page == Page.SETTINGS) { navigate(Page.SETTINGS) } }
+                item { DrawerOption(Art.Download, "Descargar contenidos", "Más temas y audios", page == Page.DOWNLOADS) { navigate(Page.DOWNLOADS) } }
                 item {
                     Text(
                         "🔒 Tu perfil se almacena en este dispositivo. Las pruebas actuales son demostrativas.",
@@ -234,7 +236,12 @@ private fun EasyEnglishApplication() {
                         Text("Easy English", color = Color(0xFF1554B5), fontSize = 20.sp)
                     }
                     if (profile.saved) {
-                        Box(Modifier.clickable { scope.launch { drawerState.open() } }) {
+                        Row(
+                            modifier=Modifier.clickable { scope.launch { drawerState.open() } },
+                            verticalAlignment=Alignment.CenterVertically,
+                            horizontalArrangement=Arrangement.spacedBy(5.dp)
+                        ) {
+                            EasyIcon(Art.Menu,Modifier.size(23.dp),"Abrir menú")
                             Avatar(profile.photoPath, 46)
                         }
                     }
@@ -294,7 +301,7 @@ private fun DrawerSection(name: String) {
 }
 
 @Composable
-private fun DrawerOption(icon: Int, label: String, detail: String, selected: Boolean, onClick: () -> Unit) {
+private fun DrawerOption(icon: Art, label: String, detail: String, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
@@ -305,12 +312,7 @@ private fun DrawerOption(icon: Int, label: String, detail: String, selected: Boo
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(28.dp),
-            contentScale = ContentScale.Fit
-        )
+        EasyIcon(icon, Modifier.size(32.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(label, fontSize = 13.sp, color = if (selected) Color(0xFF1258C0) else Color(0xFF203D72))
             Text(detail, fontSize = 10.sp, color = Color(0xFF7084A5), maxLines = 1)
@@ -335,7 +337,7 @@ private fun Avatar(photoPath: String, size: Int) {
         if (bitmap != null) {
             Image(bitmap, "Foto del perfil", Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
-            Image(painterResource(R.drawable.nav_profile), "Foto de perfil predeterminada", Modifier.size((size * .68f).dp))
+            EasyIcon(Art.Profile, Modifier.size((size * .68f).dp), "Foto de perfil predeterminada")
         }
     }
 }
@@ -349,7 +351,7 @@ private fun ScreenTitle(heading: String, sub: String) {
 }
 
 @Composable
-private fun FeatureCard(title: String, detail: String, icon: Int? = null, onClick: () -> Unit) {
+private fun FeatureCard(title: String, detail: String, icon: Art? = null, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -361,7 +363,7 @@ private fun FeatureCard(title: String, detail: String, icon: Int? = null, onClic
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            if (icon != null) Image(painterResource(icon), null, Modifier.size(46.dp))
+            if (icon != null) EasyIcon(icon, Modifier.size(46.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, color = Navy, fontSize = 16.sp)
                 Text(detail, color = Gray, fontSize = 12.sp)
@@ -426,7 +428,7 @@ private fun ProfilePage(
             }
         }
         item {
-            FeatureCard("Prueba de clasificación", "Evalúa tus conocimientos. Versión inicial de demostración.", R.drawable.nav_exam, onStartTest)
+            FeatureCard("Prueba de clasificación", "Evalúa tus conocimientos. Versión inicial de demostración.", Art.Target, onStartTest)
         }
         item {
             OutlinedButton(onClick = onSkip, modifier = Modifier.fillMaxWidth()) {
@@ -600,18 +602,18 @@ private fun HomePage(profile: UserProfile, onLevels: () -> Unit, onClass: () -> 
             }
         }
         item { Text("Tu siguiente lección", fontSize = 19.sp, color = Navy) }
-        item { FeatureCard("Verbo to be · A1", "Lección con teoría y juegos", R.drawable.nav_book, onClick = onClass) }
+        item { FeatureCard("Verbo to be · A1", "Lección con teoría y juegos", Art.Unit, onClick = onClass) }
         item { Text("Explora tu aprendizaje", fontSize = 19.sp, color = Navy) }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickTile("Ver niveles", R.drawable.nav_levels, Color(0xFFE8F1FF), Modifier.weight(1f), onLevels)
-                QuickTile("Teoría interactiva", R.drawable.nav_book, Color(0xFFF3E8FF), Modifier.weight(1f), onClass)
+                QuickTile("Ver niveles", Art.Levels, Color(0xFFE8F1FF), Modifier.weight(1f), onLevels)
+                QuickTile("Teoría interactiva", Art.Unit, Color(0xFFF3E8FF), Modifier.weight(1f), onClass)
             }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                QuickTile("Practicar", R.drawable.nav_exam, Color(0xFFFFF1DD), Modifier.weight(1f), onClass)
-                QuickTile("Más contenidos", R.drawable.nav_download, Color(0xFFE0F9F4), Modifier.weight(1f), onDownloads)
+                QuickTile("Practicar", Art.Target, Color(0xFFFFF1DD), Modifier.weight(1f), onClass)
+                QuickTile("Más contenidos", Art.Download, Color(0xFFE0F9F4), Modifier.weight(1f), onDownloads)
             }
         }
         item {
@@ -640,10 +642,10 @@ private fun MetricCard(value: String, label: String, modifier: Modifier = Modifi
 }
 
 @Composable
-private fun QuickTile(label: String, icon: Int, tint: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun QuickTile(label: String, icon: Art, tint: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = modifier, colors = CardDefaults.cardColors(containerColor = tint), shape = RoundedCornerShape(16.dp)) {
         Row(Modifier.padding(11.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(icon), null, Modifier.size(30.dp))
+            EasyIcon(icon, Modifier.size(32.dp))
             Text(label, color = Navy, fontSize = 11.sp, lineHeight = 15.sp)
         }
     }
@@ -680,7 +682,12 @@ private fun levelIcon(code: String): Int = when (code) {
 @Composable
 private fun LevelsPage(onLevel: (String) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        item { ScreenTitle("Niveles y unidades", "A0 a C2 · 156 unidades de inglés americano") }
+        item {
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                EasyIcon(Art.Levels,Modifier.size(55.dp))
+                ScreenTitle("Niveles y unidades", "A0 a C2 · 156 unidades de inglés americano")
+            }
+        }
         item { Text("ELIGE TU ETAPA", color = Blue, fontSize = 11.sp, letterSpacing = 1.sp) }
         items(LevelCatalog.levels) { lvl ->
             Card(onClick = { onLevel(lvl.code) }, colors = CardDefaults.cardColors(containerColor = levelTint(lvl.code)), shape = RoundedCornerShape(19.dp)) {
@@ -730,8 +737,8 @@ private fun UnitsPage(level: String, onBack: () -> Unit, onUnit: (Int) -> Unit) 
         items(filtered) { (index,title) ->
             FeatureCard(
                 (index+1).toString().padStart(2,'0')+"  "+title,
-                "8 sesiones · 64 actividades, teoría y juegos",
-                R.drawable.nav_book
+                "8 sesiones · 128 ejercicios, teoría y juegos",
+                Art.Unit
             ) { onUnit(index) }
         }
     }
@@ -743,7 +750,12 @@ private fun ProgressPage(profile: UserProfile, onLevels: () -> Unit) {
     val stats=remember { PracticeProgressStore(context).summary() }
     val accuracy=if(stats.attempts==0)0f else stats.correct.toFloat()/stats.attempts
     LazyColumn(contentPadding=PaddingValues(18.dp),verticalArrangement=Arrangement.spacedBy(15.dp)) {
-        item { ScreenTitle("Mi progreso","Tu actividad de práctica en este dispositivo") }
+        item {
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                EasyIcon(Art.Progress,Modifier.size(57.dp))
+                ScreenTitle("Mi progreso","Tu actividad de práctica en este dispositivo")
+            }
+        }
         item {
             Card(colors=CardDefaults.cardColors(containerColor=Color.White)) {
                 Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(11.dp)) {
@@ -759,7 +771,7 @@ private fun ProgressPage(profile: UserProfile, onLevels: () -> Unit) {
             FeatureCard(
                 "Repasos sugeridos: "+stats.dueUnits,
                 "Recuperación espaciada basada en tus intentos",
-                R.drawable.nav_progress,
+                Art.Progress,
                 onClick=onLevels
             )
         }
@@ -787,7 +799,12 @@ private fun SettingsPage(
     onAudio: (Boolean) -> Unit, onDownloads: () -> Unit
 ) {
     LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
-        item { ScreenTitle("Preferencias", "Personaliza tu experiencia de aprendizaje") }
+        item {
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                EasyIcon(Art.Settings,Modifier.size(52.dp))
+                ScreenTitle("Preferencias", "Personaliza tu experiencia de aprendizaje")
+            }
+        }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -801,7 +818,7 @@ private fun SettingsPage(
                 }
             }
         }
-        item { FeatureCard("Buscar temas y audios", "Consulta y descarga paquetes oficiales de Easy English. Se requiere internet solo para descargar.", R.drawable.nav_download, onDownloads) }
+        item { FeatureCard("Buscar temas y audios", "Consulta y descarga paquetes oficiales de Easy English. Se requiere internet solo para descargar.", Art.Download, onDownloads) }
         item { Text("Los contenidos ya instalados permanecen disponibles sin conexión. No se envían nombres, fotografías ni respuestas al descargar.", fontSize = 11.sp, color = Gray) }
     }
 }
@@ -816,7 +833,7 @@ private fun DownloadsPage(store: ContentStore, enableAudio: Boolean) {
     val context = LocalContext.current
     LazyColumn(contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { ScreenTitle("Descargar contenidos", "Más temas, ejercicios y audios para usar después sin internet") }
-        item { FeatureCard("Contenido instalado", "La estructura A0–C2 y la lección de muestra están integradas en la APK.", R.drawable.nav_book) {} }
+        item { FeatureCard("Contenido instalado", "La estructura A0–C2 y la lección de muestra están integradas en la APK.", Art.Unit) {} }
         item {
             PrimaryAction(if (loading) "Consultando..." else "Buscar paquetes disponibles") {
                 if (!loading) scope.launch {

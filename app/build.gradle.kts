@@ -9,8 +9,8 @@ android {
         applicationId = "com.easyenglish.app"
         minSdk = 29
         targetSdk = 37
-        versionCode = 7
-        versionName = "0.7.0"
+        versionCode = 12
+        versionName = "0.11.0"
     }
     buildTypes { getByName("release") { isMinifyEnabled = false } }
     compileOptions {
@@ -28,4 +28,5 @@ dependencies {
     implementation("androidx.compose.animation:animation-core")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    testImplementation("junit:junit:4.13.2")
 }
