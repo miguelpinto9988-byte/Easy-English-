@@ -60,13 +60,20 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
     var prepStatus by remember(lesson.id) { mutableStateOf("") }
     val scope=rememberCoroutineScope()
     val frames=remember(lesson.id) { TheorySlidePlan.build(lesson) }
+    val bundled=remember(lesson.id) { BundledTheorySlides.hasCompleteBundle(context,lesson) }
+    val slideCount=if(bundled) BundledTheorySlides.COUNT else TheorySlidePlan.COUNT
     val frame=frames[index]
     val fullContent=frame.fullText()
+    val slideHeading=if(bundled) "Diapositiva "+(index+1)+" de 8 · "+lesson.title else frame.title
     val bitmap by produceState<ImageBitmap?>(null,lesson.id,index,translations) {
         value=null
         value=withContext(Dispatchers.IO) {
-            val file=TheorySlideRenderer.imageFile(context,lesson,index,translations)
-            BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+            if(bundled) {
+                BundledTheorySlides.read(context,lesson,index).asImageBitmap()
+            } else {
+                val file=TheorySlideRenderer.imageFile(context,lesson,index,translations)
+                BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+            }
         }
     }
 
@@ -76,14 +83,16 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
             EasyIcon(Art.English,Modifier.size(48.dp))
             Column(Modifier.weight(1f)) {
                 Text("TEORÍA VISUAL · PNG",color=Color(0xFF276DDD),fontSize=12.sp)
-                Text(frame.title,color=Color(0xFF153B80),fontSize=19.sp)
+                Text(slideHeading,color=Color(0xFF153B80),fontSize=19.sp)
             }
         }
-        Text("16 diapositivas de esta unidad · de A0 a C2 · sin conexión.",
+        Text(if(bundled)
+                "8 PNG originales horizontales · 1920 × 1080 · sin conexión."
+            else "16 infografías generadas de esta unidad · sin conexión.",
             color=Color(0xFF617797),fontSize=12.sp)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-            frames.forEach { page ->
+            frames.take(slideCount).forEach { page ->
                 FilterChip(
                     selected=index==page.index,
                     onClick={index=page.index},
@@ -101,17 +110,18 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                 }
             } else {
                 Image(bitmap=bitmap!!,
-                    contentDescription="Diapositiva "+(index+1)+" de 16: "+
-                        TheorySlideRenderer.titles[index],
-                    modifier=Modifier.fillMaxWidth().aspectRatio(900f/1480f),
+                    contentDescription=if(bundled)
+                        "Imagen PNG "+(index+1)+" de 8. "+lesson.title
+                    else "Infografía "+(index+1)+" de 16. "+frame.title,
+                    modifier=Modifier.fillMaxWidth().aspectRatio(if(bundled) 16f/9f else 900f/1480f),
                     contentScale=ContentScale.Fit)
             }
         }
-        TextButton(onClick={expanded=true},modifier=Modifier.fillMaxWidth()) {
+        if(!bundled) TextButton(onClick={expanded=true},modifier=Modifier.fillMaxWidth()) {
             EasyIcon(Art.Reading,Modifier.size(26.dp))
             Text("Leer el contenido completo de esta diapositiva",fontSize=12.sp)
         }
-        if(expanded) {
+        if(expanded && !bundled) {
             AlertDialog(
                 onDismissRequest={expanded=false},
                 title={Text(frame.title)},
@@ -125,7 +135,7 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                 }
             )
         }
-        Row(verticalAlignment=Alignment.CenterVertically,
+        if(!bundled) Row(verticalAlignment=Alignment.CenterVertically,
             horizontalArrangement=Arrangement.spacedBy(10.dp)) {
             Switch(checked=translations,onCheckedChange={translations=it})
             Text("Mostrar traducciones en los ejemplos",
@@ -137,13 +147,13 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                 EasyIcon(Art.Back,Modifier.size(22.dp))
                 Text("Anterior",fontSize=12.sp)
             }
-            Button(onClick={index++},enabled=index<TheorySlideRenderer.COUNT-1,
+            Button(onClick={index++},enabled=index<slideCount-1,
                 modifier=Modifier.weight(1f)) {
-                Text(if(index==TheorySlideRenderer.COUNT-1)"Terminada" else "Siguiente",fontSize=12.sp)
+                Text(if(index==slideCount-1)"Terminada" else "Siguiente",fontSize=12.sp)
                 EasyIcon(Art.Next,Modifier.size(22.dp))
             }
         }
-        if(frame.audioText.isNotBlank()) {
+        if(!bundled && frame.audioText.isNotBlank()) {
             OutlinedButton(
                 onClick={
                     onSpeak(frame.audioText,0.9f)
@@ -154,7 +164,7 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
                 Text("Escuchar modelo en inglés")
             }
         }
-        Button(
+        if(!bundled) Button(
             enabled=!preparing,
             onClick={
                 scope.launch {
@@ -179,11 +189,13 @@ fun TheoryPresentation(lesson: StudyLesson, onSpeak: (String, Float) -> Unit) {
             EasyIcon(Art.Download,Modifier.size(24.dp))
             Text(if(preparing)"Preparando diapositivas..." else "Preparar las 16 diapositivas PNG")
         }
-        if(prepStatus.isNotBlank()) {
+        if(!bundled && prepStatus.isNotBlank()) {
             Text(prepStatus,color=Color(0xFF276DDD),fontSize=12.sp)
         }
         Text(
-            "Los PNG se guardan temporalmente en el dispositivo. El contenido procede de "+
+            if(bundled) "Estos ocho PNG horizontales forman parte de la presentación instalada. "+
+                "Las traducciones y ejercicios aparecen dentro de cada imagen."
+            else "Los PNG se guardan temporalmente en el dispositivo. El contenido procede de "+
                 "la teoría de la unidad; aún requiere revisión pedagógica externa.",
             color=Color(0xFF66799C),fontSize=11.sp,textAlign=TextAlign.Start
         )
